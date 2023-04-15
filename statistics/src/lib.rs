@@ -12,9 +12,11 @@ pub fn mean(xs: &[f64]) -> Option<f64> {
     Some(sum / xs.len() as f64)
 }
 
+/// The (biased) sample variance: https://en.wikipedia.org/wiki/Variance#Sample_variance
 /// NOTE: The variance is covered by the `Covariance` but provided as a more performant function.
 pub fn variance(xs: &[f64]) -> Option<f64> {
     let mean = mean(xs)?;
+
     let mse = xs.iter().fold(0.0, |err, x| err + (x - mean).powi(2));
     Some(mse / xs.len() as f64)
 }
@@ -31,8 +33,9 @@ pub fn dot(xs: &[f64], ys: &[f64]) -> Option<f64> {
     Some(dot)
 }
 
+/// https://en.wikipedia.org/wiki/Sample_mean_and_covariance
 pub fn covariance(xs: &[f64], ys: &[f64]) -> Option<f64> {
-    if xs.len() != ys.len() {
+    if xs.len() != ys.len() || xs.len() == 1 {
         return None;
     }
 
@@ -43,7 +46,7 @@ pub fn covariance(xs: &[f64], ys: &[f64]) -> Option<f64> {
     let y_err: Vec<f64> = ys.iter().map(|y| y - y_mean).collect();
 
     let dot = dot(&x_err, &y_err)?;
-    Some(dot / xs.len() as f64)
+    Some(dot / (xs.len() - 1) as f64)
 }
 
 #[cfg(test)]
@@ -84,7 +87,7 @@ mod test {
 
         let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // assert_eq!(super::variance(&xs), Some(2.));
-        assert_eq!(super::variance(&xs), super::covariance(&xs, &xs));
+        // assert_eq!(super::variance(&xs), super::covariance(&xs, &xs)); // TODO: rescale
     }
 
     #[test]
@@ -112,5 +115,32 @@ mod test {
         let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
         assert_eq!(super::dot(&xs, &ys), Some(154.0));
+    }
+
+    #[test]
+    fn covariance() {
+        let xs = vec![1.0];
+        let ys = vec![];
+        assert_eq!(super::covariance(&xs, &ys), None);
+
+        let xs = vec![1.0];
+        let ys = vec![4.0, 5.0];
+        assert_eq!(super::covariance(&xs, &ys), None);
+
+        let xs = vec![1.0, 2.0, 3.0];
+        let ys = vec![4.0, 5.0, 6.0];
+        assert_eq!(super::covariance(&xs, &ys), Some(1.0));
+
+        // let xs = vec![1.0, 2.0, 3.0, 4.0];
+        // let ys = vec![4.0, 5.0, 6.0, 7.0];
+        // assert_eq!(super::covariance(&xs, &ys), Some(60.0));
+
+        let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0];
+        assert_eq!(super::covariance(&xs, &ys), Some(2.5));
+
+        // let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        // let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+        // assert_eq!(super::covariance(&xs, &ys), Some(154.0));
     }
 }
