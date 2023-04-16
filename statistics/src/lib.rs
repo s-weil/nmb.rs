@@ -89,6 +89,7 @@ impl NumericRing for f64 {}
 impl NumericField for f32 {}
 impl NumericField for f64 {}
 
+// Todo: don't need a ring here
 pub fn sum<'a, S, T: 'a>(xs: S) -> Option<T>
 where
     S: Samples<'a, T>,
@@ -102,6 +103,20 @@ where
     Some(sum)
 }
 
+pub trait Sum<T> {
+    fn sum(self) -> Option<T>;
+}
+
+impl<'a, S, N: 'a> Sum<N> for S
+where
+    S: Samples<'a, N>,
+    N: NumericRing + Copy,
+{
+    fn sum(self) -> Option<N> {
+        sum(self)
+    }
+}
+
 pub fn mean<'a, S, T: 'a>(xs: S) -> Option<T>
 where
     S: Samples<'a, T>,
@@ -111,6 +126,20 @@ where
     let sum: T = sum(xs)?;
 
     Some(sum / len.into())
+}
+
+pub trait Mean<T> {
+    fn mean(self) -> Option<T>;
+}
+
+impl<'a, S, N: 'a> Mean<N> for S
+where
+    S: Samples<'a, N>,
+    N: NumericField + From<i8> + Copy,
+{
+    fn mean(self) -> Option<N> {
+        mean(self)
+    }
 }
 
 /*
@@ -158,6 +187,7 @@ pub fn covariance(xs: &[f64], ys: &[f64]) -> Option<f64> {
 
 #[cfg(test)]
 mod test {
+    use crate::{Mean, Sum};
 
     #[test]
     fn sum() {
@@ -165,6 +195,7 @@ mod test {
         assert_eq!(super::sum(&vec![]) as Option<f64>, None);
 
         let xs = vec![1.0, 1.0, 2.0];
+        assert_eq!(super::sum(&xs), xs.sum());
         assert_eq!(super::sum(&xs), Some(4.0));
 
         let xs = vec![1.0, 2.0, 3.5];
@@ -176,9 +207,11 @@ mod test {
         assert_eq!(super::mean(&Vec::with_capacity(0)) as Option<f64>, None);
 
         let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(super::mean(&xs), xs.mean());
         assert_eq!(super::mean(&xs), Some(3.0));
 
         let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        assert_eq!(super::mean(&xs), xs.mean());
         assert_eq!(super::mean(&xs), Some(3.5));
     }
 
