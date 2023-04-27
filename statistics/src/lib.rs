@@ -1,16 +1,18 @@
-use algebra::{NumericField, NumericRing};
-
 mod samples;
 
+use algebra::{NumericField, NumericRing};
 use samples::Samples;
+use std::iter::ExactSizeIterator;
 
-// Todo: don't need a ring here
-pub fn sum<'a, S, T: 'a>(xs: S) -> Option<T>
+pub fn sum<'a, S, T>(xs: S) -> Option<T>
 where
-    S: Samples<'a, T>,
-    T: NumericRing + Copy,
+    S: ExactSizeIterator<Item = &'a T>,
+    T: 'a + NumericRing + Copy,
 {
-    if xs.is_empty() {
+    // if xs.is_empty() {
+    //     return None;
+    // }
+    if xs.len() == 0 {
         return None;
     }
 
@@ -18,44 +20,108 @@ where
     Some(sum)
 }
 
-pub trait Sum<T> {
-    fn sum(self) -> Option<T>;
-}
-
-impl<'a, S, N: 'a> Sum<N> for S
+pub fn mean<'a, S, I, T>(xs: S) -> Option<T>
 where
-    S: Samples<'a, N>,
-    N: NumericRing + Copy,
+    S: AsRef<I>,
+    I: ExactSizeIterator<Item = &'a T>,
+    T: 'a + NumericField + From<i8> + Copy,
 {
-    fn sum(self) -> Option<N> {
-        sum(self)
-    }
-}
-
-pub fn mean<'a, S, T: 'a>(xs: S) -> Option<T>
-where
-    S: Samples<'a, T>,
-    T: NumericField + From<i8> + Copy,
-{
-    let len = xs.len() as i8;
-    let sum: T = sum(xs)?;
+    let len = xs.as_ref().len() as i8;
+    let sum: T = sum(xs.as_ref())?;
 
     Some(sum / len.into())
 }
 
-pub trait Mean<T> {
-    fn mean(self) -> Option<T>;
+/// The (biased) sample variance: https://en.wikipedia.org/wiki/Variance#Sample_variance
+/// NOTE: The variance is covered by the `Covariance` but provided as a more performant function.
+pub fn variance<'a, S, T: 'a>(xs: S) -> Option<T>
+where
+    S: ExactSizeIterator<Item = &'a T>,
+    T: 'a + NumericField + From<i8> + Copy,
+{
+    let len = xs.len() as i8;
+    let mean = mean(&xs); // mean(&xs)?;
+
+    let m = mean.unwrap();
+
+    let mse = xs.into_iter().fold(T::zero(), |err, x| {
+        let x_err = *x + (-m);
+        err + x_err * x_err
+    });
+
+    Some(mse / len.into())
 }
 
-impl<'a, S, N: 'a> Mean<N> for S
-where
-    S: Samples<'a, N>,
-    N: NumericField + From<i8> + Copy,
-{
-    fn mean(self) -> Option<N> {
-        mean(self)
-    }
-}
+// // Todo: don't need a ring here
+// pub fn sum<'a, S, T: 'a>(xs: S) -> Option<T>
+// where
+//     S: Samples<'a, T>,
+//     T: NumericRing + Copy,
+// {
+//     if xs.is_empty() {
+//         return None;
+//     }
+
+//     let sum = xs.into_iter().fold(T::zero(), |acc, x| acc + *x);
+//     Some(sum)
+// }
+
+// pub trait Sum<T> {
+//     fn sum(self) -> Option<T>;
+// }
+
+// impl<'a, S, N: 'a> Sum<N> for S
+// where
+//     S: Samples<'a, N>,
+//     N: NumericRing + Copy,
+// {
+//     fn sum(self) -> Option<N> {
+//         sum(self)
+//     }
+// }
+
+// pub fn mean<'a, S, T: 'a>(xs: S) -> Option<T>
+// where
+//     S: Samples<'a, T>,
+//     T: NumericField + From<i8> + Copy,
+// {
+//     let len = xs.len() as i8;
+//     let sum: T = sum(xs)?;
+
+//     Some(sum / len.into())
+// }
+
+// pub trait Mean<T> {
+//     fn mean(self) -> Option<T>;
+// }
+
+// impl<'a, S, N: 'a> Mean<N> for S
+// where
+//     S: Samples<'a, N>,
+//     N: NumericField + From<i8> + Copy,
+// {
+//     fn mean(self) -> Option<N> {
+//         mean(self)
+//     }
+// }
+
+// /// The (biased) sample variance: https://en.wikipedia.org/wiki/Variance#Sample_variance
+// /// NOTE: The variance is covered by the `Covariance` but provided as a more performant function.
+// pub fn variance<'a, S, T: 'a>(xs: S) -> Option<T>
+// where
+//     &'a S: 'a + Samples<'a, T>,
+//     T: NumericField + From<i8> + Copy,
+// {
+//     let len = xs.len(); //as i8;
+//     let mean = mean(&xs)?;
+
+//     let mse = xs.into_iter().fold(T::zero(), |err, x| {
+//         let x_err = *x + (-mean);
+//         err + x_err * x_err
+//     });
+
+//     Some(mse / len.into())
+// }
 
 /*
 

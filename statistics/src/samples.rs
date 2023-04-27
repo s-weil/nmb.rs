@@ -1,3 +1,5 @@
+// TODO: use ExactSizeIterator
+
 pub trait Samples<'a, T: 'a>: std::iter::IntoIterator<Item = &'a T> {
     fn is_empty(&self) -> bool {
         self.len() == 0
