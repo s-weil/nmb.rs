@@ -29,12 +29,6 @@ impl NumericSemiGroup for f64 {}
 pub trait NumericGroup: NumericSemiGroup + Neg<Output = Self> + Sub<Output = Self> {}
 
 impl<T> NumericGroup for T where T: NumericSemiGroup + Neg<Output = Self> + Sub<Output = Self> {}
-// impl NumericGroup for i8 {}
-// impl NumericGroup for i16 {}
-// impl NumericGroup for i32 {}
-// impl NumericGroup for i64 {}
-// impl NumericGroup for f32 {}
-// impl NumericGroup for f64 {}
 
 pub trait MulIdentity: Sized {
     fn one() -> Self;
@@ -122,7 +116,15 @@ impl_add_identity! { i64 }
 impl_add_identity! { f32 }
 impl_add_identity! { f64 }
 
-// impl NumericRing for f32 {}
-// impl NumericRing for f64 {}
-// impl NumericField for f32 {}
-// impl NumericField for f64 {}
+pub trait MidPoint: Sized {
+    fn mid_point(&self, b: Self) -> Self;
+}
+
+impl<T> MidPoint for T
+where
+    T: NumericField + Copy,
+{
+    fn mid_point(&self, b: Self) -> Self {
+        (*self + b) / (T::one() + T::one())
+    }
+}

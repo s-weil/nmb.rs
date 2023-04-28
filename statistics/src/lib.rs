@@ -1,6 +1,6 @@
 mod samples;
 
-use algebra::{NumericField, NumericSemiGroup};
+use algebra::{MidPoint, NumericField, NumericSemiGroup};
 use samples::AsSlice;
 
 // TODO: don't need a ring here
@@ -160,9 +160,64 @@ where
     }
 }
 
+/// Calculates the [empirical percentile](https://en.wikipedia.org/wiki/Percentile) of the _sorted_ samples.
+/// Due to earlier validation, `durations` is a non-empty, sorted vector at this point and `n` > 0
+pub fn percentile<T>(sorted_xs: &[T], level: f64) -> Option<T>
+where
+    T: NumericField + MidPoint + Copy,
+{
+    if level < 0.0 || level > 1.0 {
+        return None;
+    }
+    if sorted_xs.is_empty() {
+        return None;
+    }
+
+    let n = sorted_xs.len();
+
+    // NOTE: have to add `-1` below due to (mathematical) idx start of 1 (rather than 0)
+    let candidate_idx: f64 = n as f64 * level;
+    let floored: usize = candidate_idx.floor() as usize;
+
+    // case candidate is an integer
+    if candidate_idx == floored as f64 {
+        let idx_bottom = (floored - 1).max(0);
+        let idx_top = floored.min(n);
+        return Some(sorted_xs[idx_bottom].mid_point(sorted_xs[idx_top]));
+    }
+    let idx = ((candidate_idx + 1.0).floor().min(n as f64) as usize - 1).max(0);
+    Some(sorted_xs[idx])
+}
+
+pub trait Percentile<T> {
+    fn percentile(&self, level: f64) -> Option<T>;
+
+    fn median(&self) -> Option<T> {
+        self.percentile(0.5)
+    }
+
+    fn p75(&self) -> Option<T> {
+        self.percentile(0.75)
+    }
+
+    fn p25(&self) -> Option<T> {
+        self.percentile(0.25)
+    }
+}
+
+impl<'a, T, S> Percentile<T> for S
+where
+    S: AsSlice<T>,
+    T: 'a + NumericField + MidPoint + Copy,
+{
+    fn percentile(&self, level: f64) -> Option<T> {
+        percentile(self.as_slice(), level)
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::{Covariance, Dot, Mean, Sum, Variance};
+    use crate::{Covariance, Dot, Mean, Percentile, Sum, Variance};
 
     #[test]
     fn sum() {
@@ -265,5 +320,24 @@ mod test {
         // let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
         // assert_eq!(super::covariance(&xs, &ys), Some(154.0));
+    }
+
+    #[test]
+    fn percentile() {
+        let mut samples = vec![82., 91., 12., 92., 63., 9., 28., 55., 96., 97.];
+        samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let median = super::percentile(&samples, 0.5);
+        assert_eq!(median, Some(72.5));
+        assert_eq!(super::percentile(&samples, 0.5), samples.percentile(0.5));
+        assert_eq!(super::percentile(&samples, 0.5), samples.median());
+
+        let quartile_fst = super::percentile(&samples, 0.25);
+        assert_eq!(quartile_fst, Some(28.0));
+        assert_eq!(super::percentile(&samples, 0.25), samples.p25());
+
+        let quartile_trd = super::percentile(&samples, 0.75);
+        assert_eq!(quartile_trd, Some(92.0));
+        assert_eq!(super::percentile(&samples, 0.75), samples.p75());
     }
 }

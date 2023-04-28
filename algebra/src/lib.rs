@@ -1,3 +1,5 @@
 mod algebraic_extensions;
 
-pub use algebraic_extensions::{NumericField, NumericGroup, NumericRing, NumericSemiGroup};
+pub use algebraic_extensions::{
+    MidPoint, NumericField, NumericGroup, NumericRing, NumericSemiGroup,
+};
