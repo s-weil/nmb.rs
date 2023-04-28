@@ -1,12 +1,12 @@
 mod samples;
 
-use algebra::{NumericField, NumericRing};
+use algebra::{NumericField, NumericSemiGroup};
 use samples::AsSlice;
 
 // TODO: don't need a ring here
 pub fn sum<T>(xs: &[T]) -> Option<T>
 where
-    T: NumericRing + Copy,
+    T: NumericSemiGroup + Copy,
 {
     if xs.is_empty() {
         return None;
@@ -33,7 +33,7 @@ pub trait Sum<T> {
 impl<'a, T, S> Sum<T> for S
 where
     S: AsSlice<T>,
-    T: 'a + NumericRing + Copy,
+    T: 'a + NumericSemiGroup + Copy,
 {
     fn sum(&self) -> Option<T> {
         sum(self.as_slice())
@@ -75,7 +75,7 @@ where
     let mean = mean(xs)?;
 
     let mse = xs.iter().fold(T::zero(), |err, x| {
-        let x_err = -mean + *x;
+        let x_err = -*x + mean;
         err + x_err * x_err
     });
 
@@ -138,11 +138,12 @@ where
     let x_mean = mean(xs)?;
     let y_mean = mean(ys)?;
 
-    let x_err: Vec<T> = xs.iter().map(|x| -*x + x_mean).collect();
-    let y_err: Vec<T> = ys.iter().map(|y| -*y + y_mean).collect();
+    let x_err: Vec<T> = xs.iter().map(|x| *x - x_mean).collect();
+    let y_err: Vec<T> = ys.iter().map(|y| *y - y_mean).collect();
 
     let dot = dot(&x_err, &y_err)?;
-    Some(dot / (-T::one() + (xs.len() as i8).into()))
+    let len = xs.len() as i8;
+    Some(dot / (T::from(len) - T::one()))
 }
 
 pub trait Covariance<S, T> {

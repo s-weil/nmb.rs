@@ -1,3 +1,3 @@
 mod algebraic_extensions;
 
-pub use algebraic_extensions::{NumericField, NumericRing};
+pub use algebraic_extensions::{NumericField, NumericGroup, NumericRing, NumericSemiGroup};
