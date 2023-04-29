@@ -8,3 +8,6 @@ authors = ["sweil"]
 
 [dependencies]
 nmbrs_algebra = { path = "../nmbrs_algebra" }
+
+[dev-dependencies]
+approx = "0.5.1"

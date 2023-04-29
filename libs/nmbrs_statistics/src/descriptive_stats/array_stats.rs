@@ -79,7 +79,10 @@ where
 /// The (biased) [sample variance](https://en.wikipedia.org/wiki/Variance#Sample_variance).
 ///
 /// NOTE: The variance is covered by the `Covariance` but provided as a more performant function.
-pub fn variance<T>(xs: &[T]) -> Option<T>
+/// Sources:
+/// * [MathDotNet](https://numerics.mathdotnet.com/DescriptiveStatistics)
+/// * [Wikipedia](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Two-pass_algorithm)
+pub fn variance<T>(xs: &[T], ty: Option<VarianceBias>) -> Option<T>
 where
     T: NumericField + From<i8> + Copy,
 {
@@ -91,11 +94,30 @@ where
         err + x_err * x_err
     });
 
-    Some(mse / len.into())
+    let scale = ty.unwrap_or_default().scale(len);
+    Some(mse / scale.into())
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VarianceBias {
+    Population,
+    #[default]
+    Sample,
+}
+
+impl VarianceBias {
+    fn scale(&self, n: i8) -> i8 {
+        match self {
+            VarianceBias::Population => n,
+            VarianceBias::Sample => n - 1,
+        }
+    }
 }
 
 pub trait Variance<T> {
-    fn variance(&self) -> Option<T>;
+    /// TODO: add docs as above
+    fn sample_variance(&self) -> Option<T>;
+    fn population_variance(&self) -> Option<T>;
 }
 
 impl<'a, T, S> Variance<T> for S
@@ -103,8 +125,11 @@ where
     S: AsSlice<T>,
     T: 'a + NumericField + From<i8> + Copy,
 {
-    fn variance(&self) -> Option<T> {
-        variance(self.as_slice())
+    fn population_variance(&self) -> Option<T> {
+        variance(self.as_slice(), Some(VarianceBias::Population))
+    }
+    fn sample_variance(&self) -> Option<T> {
+        variance(self.as_slice(), Some(VarianceBias::Sample))
     }
 }
 
@@ -150,6 +175,7 @@ where
     let x_mean = mean(xs)?;
     let y_mean = mean(ys)?;
 
+    // TODO: bench it. maybe it's faster to use a single loop
     let x_err: Vec<T> = xs.iter().map(|x| *x - x_mean).collect();
     let y_err: Vec<T> = ys.iter().map(|y| *y - y_mean).collect();
 
@@ -229,6 +255,8 @@ where
 
 #[cfg(test)]
 mod test {
+    use crate::descriptive_stats::array_stats::VarianceBias;
+
     use super::{Covariance, Dot, Mean, Percentile, Sum, Variance};
 
     #[test]
@@ -259,19 +287,31 @@ mod test {
     }
 
     #[test]
-    fn variance() {
+    fn population_variance() {
         let xs: Vec<f32> = Vec::with_capacity(0);
-        assert_eq!(super::variance(&xs), None);
+        assert_eq!(super::variance(&xs, Some(VarianceBias::Population)), None);
 
         let xs = vec![2.0, 2.0, 2.0, 2.0, 2.0];
-        assert_eq!(super::variance(&xs), Some(0.0));
+        assert_eq!(
+            super::variance(&xs, Some(VarianceBias::Population)),
+            Some(0.0)
+        );
 
         let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        assert_eq!(super::variance(&xs), Some(2.0));
-        assert_eq!(super::variance(&xs), xs.variance());
+        assert_eq!(
+            super::variance(&xs, Some(VarianceBias::Population)),
+            Some(2.0)
+        );
+        assert_eq!(
+            super::variance(&xs, Some(VarianceBias::Population)),
+            xs.population_variance()
+        );
 
         let xs: &[f32] = &[1.0, 2.0, 3.0, 4.0, 5.0];
-        assert_eq!(super::variance(xs), Some(2.0));
+        assert_eq!(
+            super::variance(&xs, Some(VarianceBias::Population)),
+            Some(2.0)
+        );
 
         let _xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // assert_eq!(super::variance(&xs), Some(2.));
@@ -352,4 +392,64 @@ mod test {
         assert_eq!(quartile_trd, Some(92.0));
         assert_eq!(super::percentile(&samples, 0.75), samples.p75());
     }
+
+    use approx::assert_abs_diff_eq;
+    const EPSILON: f64 = 1e-15;
+
+    #[test]
+    fn mean1() {
+        let data = [
+            5.3766713954610001e-01,
+            1.8338850145950865e+00,
+            -2.2588468610036481e+00,
+            8.6217332036812055e-01,
+            3.1876523985898081e-01,
+            -1.3076882963052734e+00,
+            -4.3359202230568356e-01,
+            3.4262446653864992e-01,
+            3.5783969397257605e+00,
+            2.7694370298848772e+00,
+        ];
+        assert_abs_diff_eq!(
+            super::mean(&data).unwrap(),
+            6.2428219709029698e-01,
+            epsilon = EPSILON
+        );
+    }
+
+    #[test]
+    fn mean_0() {
+        assert_eq!(super::mean::<f64>(&[]), None);
+    }
+
+    #[test]
+    fn sample_variance1() {
+        let xs = &[
+            5.3766713954610001e-01,
+            1.8338850145950865e+00,
+            -2.2588468610036481e+00,
+            8.6217332036812055e-01,
+            3.1876523985898081e-01,
+            -1.3076882963052734e+00,
+            -4.3359202230568356e-01,
+            3.4262446653864992e-01,
+            3.5783969397257605e+00,
+            2.7694370298848772e+00,
+        ];
+        assert_abs_diff_eq!(
+            super::variance(xs, Some(VarianceBias::Sample)).unwrap(),
+            3.1324921339484746e+00,
+            epsilon = EPSILON
+        );
+    }
+
+    // #[test]
+    // fn variance_0() {
+    //     assert!(super::population_variance::<f64>(&[]).is_none());
+    // }
+
+    // #[test]
+    // fn variance_1() {
+    //     assert_eq!(super::population_variance::<f64>(&[1.0]), Some(0.0));
+    // }
 }
