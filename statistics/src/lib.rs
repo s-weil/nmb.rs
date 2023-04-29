@@ -161,7 +161,7 @@ where
 }
 
 /// Calculates the [empirical percentile](https://en.wikipedia.org/wiki/Percentile) of the _sorted_ samples.
-/// Due to earlier validation, `durations` is a non-empty, sorted vector at this point and `n` > 0
+/// The samples are assumed to be sorted in ascending order and level is assumed to be in the range `[0, 1]`.
 pub fn percentile<T>(sorted_xs: &[T], level: f64) -> Option<T>
 where
     T: NumericField + MidPoint + Copy,
