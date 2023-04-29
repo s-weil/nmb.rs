@@ -1,8 +1,5 @@
-mod descriptive_stats;
-mod samples;
-
-use algebra::{MidPoint, NumericField, NumericSemiGroup};
-use samples::AsSlice;
+use crate::AsSlice;
+use nmbrs_algebra::{MidPoint, NumericField, NumericSemiGroup};
 
 /* TODOs:
 - splt into descriptive and inferential stats and ordered and unordered stats
@@ -232,7 +229,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::{Covariance, Dot, Mean, Percentile, Sum, Variance};
+    use super::{Covariance, Dot, Mean, Percentile, Sum, Variance};
 
     #[test]
     fn sum() {
