@@ -166,7 +166,7 @@ pub fn percentile<T>(sorted_xs: &[T], level: f64) -> Option<T>
 where
     T: NumericField + MidPoint + Copy,
 {
-    if level < 0.0 || level > 1.0 {
+    if !(0.0..=1.0).contains(&level) {
         return None;
     }
     if sorted_xs.is_empty() {
@@ -222,7 +222,7 @@ mod test {
     #[test]
     fn sum() {
         assert_eq!(super::sum(&Vec::with_capacity(0)) as Option<f64>, None);
-        assert_eq!(super::sum(&vec![]) as Option<f64>, None);
+        assert_eq!(super::sum(&[]) as Option<f64>, None);
 
         let xs = vec![1.0, 1.0, 2.0];
 
@@ -259,9 +259,9 @@ mod test {
         assert_eq!(super::variance(&xs), xs.variance());
 
         let xs: &[f32] = &[1.0, 2.0, 3.0, 4.0, 5.0];
-        assert_eq!(super::variance(&xs), Some(2.0));
+        assert_eq!(super::variance(xs), Some(2.0));
 
-        let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let _xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // assert_eq!(super::variance(&xs), Some(2.));
         // assert_eq!(super::variance(&xs), super::covariance(&xs, &xs)); // TODO: rescale
     }
