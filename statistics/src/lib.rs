@@ -1,7 +1,14 @@
+mod descriptive_stats;
 mod samples;
 
 use algebra::{MidPoint, NumericField, NumericSemiGroup};
 use samples::AsSlice;
+
+/* TODOs:
+- splt into descriptive and inferential stats and ordered and unordered stats
+- math formulas
+- combined stats (returning mean and std) for perf reasons
+- furhter metrics */
 
 // TODO: don't need a ring here
 pub fn sum<T>(xs: &[T]) -> Option<T>
@@ -40,6 +47,14 @@ where
     }
 }
 
+/// The arithmetic mean or average of the provided samples.
+/// In statistics, the sample mean is a measure of the central tendency and estimates the expected value of the distribution.
+/// The mean is affected by outliers, so if you need a more robust estimate consider to use the Median instead.
+/// $ \Sigma x_i $
+/// Sources:
+/// - [MathDotNet](https://numerics.mathdotnet.com/DescriptiveStatistics)
+/// - [Wikipedia](https://en.wikipedia.org/wiki/Mean)
+/// - [Wolfram MathWorld](http://mathworld.wolfram.com/SampleMean.html)
 pub fn mean<T>(xs: &[T]) -> Option<T>
 where
     T: NumericField + From<i8> + Copy,
