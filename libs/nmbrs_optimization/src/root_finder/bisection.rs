@@ -70,8 +70,14 @@ mod tests {
     #[test]
     fn test_bisection_default() {
         let f = |x: f64| x * x - 2.0;
+
+        // search for sqrt(2) in the interval [1, 2]
         let root = bisection(f, 1.0, 2.0, None);
         assert_abs_diff_eq!(root.unwrap(), 1.414213562373095, epsilon = 1e-15);
+
+        // search for sqrt(2) in the interval [-2, 0]
+        let root = bisection(f, -2.0, 0.0, None);
+        assert_abs_diff_eq!(root.unwrap(), -1.414213562373095, epsilon = 1e-15);
     }
 
     #[test]

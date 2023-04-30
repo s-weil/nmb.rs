@@ -42,15 +42,37 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use approx::assert_abs_diff_eq;
 
     #[test]
-    fn test_newton() {
+    fn root() {
         let f = |x: f64| x * x - 2.0;
         let df = |x: f64| 2.0 * x;
-        let root = newton(f, df, 1.0, None);
 
+        // variant 1: start above the right root
+        let root = super::newton(f, df, 3.0, None);
         assert_abs_diff_eq!(root.unwrap(), 1.414213562373095, epsilon = 1e-15);
+
+        // variant 2: start below the right root
+        let root = super::newton(f, df, 0.1, None);
+        assert_abs_diff_eq!(root.unwrap(), 1.414213562373095, epsilon = 1e-15);
+
+        // variant 3: start above the left root
+        let root = super::newton(f, df, -0.1, None);
+        assert_abs_diff_eq!(root.unwrap(), -1.414213562373095, epsilon = 1e-15);
+
+        // variant 4: start below the left root
+        let root = super::newton(f, df, -3.0, None);
+        assert_abs_diff_eq!(root.unwrap(), -1.414213562373095, epsilon = 1e-15);
+    }
+
+    #[test]
+    fn no_root() {
+        let f = |x: f64| x * x - 2.0;
+        let df = |x: f64| 2.0 * x;
+
+        // derivative is zero at x = 0, resulting in invalid step size
+        let root = super::newton(f, df, 0.0, None);
+        assert!(root.is_none());
     }
 }
