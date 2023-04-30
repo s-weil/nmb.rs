@@ -5,5 +5,4 @@
 # authors = ["sweil"]
 
 [workspace]
-members = [ "libs/nmbrs_algebra", "libs/nmbrs_statistics" ]
-# members = [ "./libs/*" ]
+members = [ "libs/nmbrs_algebra", "libs/nmbrs_statistics", "libs/nmbrs_optimization" ]
