@@ -1,4 +1,4 @@
-use std::iter;
+
 
 use crate::root_finder::RootFinderConfig;
 
@@ -29,10 +29,10 @@ where
 
     let config = config.unwrap_or_default();
 
-    let tol = config.tolerance.unwrap_or(1e-15);
-    let max_iterations = config
-        .max_iterations
-        .unwrap_or(tol.log2().ceil() as usize + 3);
+    let tol = config.tolerance;
+    let max_iterations = config.max_iterations;
+    // .max_iterations
+    // .unwrap_or(tol.log2().ceil() );
 
     if f_a.abs() < tol {
         return Some(a);
@@ -46,7 +46,7 @@ where
     let mut iterations = 0;
 
     let mut delta = b - a;
-    while delta > tol && iterations < max_iterations {
+    while delta > tol && f_mid.abs() > tol && iterations < max_iterations {
         if f_a * f_mid < 0.0 {
             b = mid;
             f_b = f_mid;
@@ -96,7 +96,7 @@ mod tests {
         let root = bisection(f, -1.0, -1.0, None);
         assert!(root.is_none());
 
-        // cannot find root in the interval even though it exists: f(-2) < 0 and f(2) < 0i
+        // cannot find root in the interval even though it exists: f(-2) > 0 and f(2) > 0
         assert!(f(2.0) > 0.0);
         assert!(f(2.0) > 0.0);
         let root = bisection(f, 2.0, 2.0, None);

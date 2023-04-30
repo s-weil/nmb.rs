@@ -1,6 +1,6 @@
 use super::RootFinderConfig;
 
-/// implement the Newton method for root finding
+/// The Newton-Raphson method for root finding
 /// https://en.wikipedia.org/wiki/Newton%27s_method
 /// https://mathworld.wolfram.com/NewtonsMethod.html
 pub fn newton<F, DF>(f: F, df: DF, x0: f64, config: Option<RootFinderConfig>) -> Option<f64>
@@ -9,8 +9,8 @@ where
     DF: Fn(f64) -> f64,
 {
     let config = config.unwrap_or_default();
-    let tol = config.tolerance.unwrap_or(1e-15);
-    let max_iterations = config.max_iterations.unwrap_or(100);
+    let tol = config.tolerance;
+    let max_iterations = config.max_iterations;
 
     let mut x = x0;
     let mut df_x = df(x);
@@ -25,7 +25,7 @@ where
     let mut delta = -f_x / df_x;
     let mut n_iterations = 0;
 
-    while delta.abs() > tol && n_iterations < max_iterations {
+    while delta.abs() > tol && f_x.abs() > tol && n_iterations < max_iterations {
         x += delta;
         f_x = f(x);
         df_x = df(x);
