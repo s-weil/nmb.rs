@@ -35,6 +35,34 @@ impl Default for RootFinderConfig {
     }
 }
 
+pub enum RootSolver<F> {
+    Bisection { f: F, a: f64, b: f64 },
+    NewtonRaphson { f: F, df: F, x0: f64 },
+}
+
+impl<F> RootSolver<F>
+where
+    F: Fn(f64) -> f64,
+{
+    pub fn bisection(f: F, a: f64, b: f64) -> Self {
+        Self::Bisection { f, a, b }
+    }
+
+    pub fn newton_raphson(f: F, df: F, x0: f64) -> Self
+    where
+        F: Fn(f64) -> f64,
+    {
+        Self::NewtonRaphson { f, df, x0 }
+    }
+
+    fn try_find_root(&self, config: Option<RootFinderConfig>) -> Option<f64> {
+        match self {
+            Self::Bisection { f, a, b } => bisection(f, *a, *b, config),
+            Self::NewtonRaphson { f, df, x0 } => newton(f, df, *x0, config),
+        }
+    }
+}
+
 // pub trait RootFinder {
 //     fn find_root<F>(&self, f: F, a: f64, b: f64, config: Option<RootFinderConfig>) -> f64
 //     where
