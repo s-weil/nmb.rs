@@ -1,5 +1,3 @@
-
-
 use crate::root_finder::RootFinderConfig;
 
 /// implementation of the bisection algorithm
@@ -64,42 +62,42 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use approx::assert_abs_diff_eq;
+    use std::f64::consts::SQRT_2;
 
     #[test]
-    fn test_bisection_default() {
+    fn bisection_root_iquadratic() {
         let f = |x: f64| x * x - 2.0;
 
         // search for sqrt(2) in the interval [1, 2]
-        let root = bisection(f, 1.0, 2.0, None);
-        assert_abs_diff_eq!(root.unwrap(), 1.414213562373095, epsilon = 1e-15);
+        let root = super::bisection(f, 1.0, 2.0, None);
+        assert_abs_diff_eq!(root.unwrap(), SQRT_2, epsilon = 1e-15);
 
         // search for sqrt(2) in the interval [-2, 0]
-        let root = bisection(f, -2.0, 0.0, None);
-        assert_abs_diff_eq!(root.unwrap(), -1.414213562373095, epsilon = 1e-15);
+        let root = super::bisection(f, -2.0, 0.0, None);
+        assert_abs_diff_eq!(root.unwrap(), -SQRT_2, epsilon = 1e-15);
     }
 
     #[test]
-    fn test_bisection_no_root() {
+    fn bisection_no_root() {
         let f = |x: f64| x * x - 2.0;
 
         // no root in the interval: f(3) > 0 and f(4) > 0
         assert!(f(3.0) > 0.0);
         assert!(f(4.0) > 0.0);
-        let root = bisection(f, 3.0, 4.0, None);
+        let root = super::bisection(f, 3.0, 4.0, None);
         assert!(root.is_none());
 
         // no root in the interval: f(-1) < 0 and f(1) < 0
         assert!(f(1.0) < 0.0);
         assert!(f(-1.0) < 0.0);
-        let root = bisection(f, -1.0, -1.0, None);
+        let root = super::bisection(f, -1.0, -1.0, None);
         assert!(root.is_none());
 
         // cannot find root in the interval even though it exists: f(-2) > 0 and f(2) > 0
         assert!(f(2.0) > 0.0);
         assert!(f(2.0) > 0.0);
-        let root = bisection(f, 2.0, 2.0, None);
+        let root = super::bisection(f, 2.0, 2.0, None);
         assert!(root.is_none());
         // TODO: provide version with randomized evaluations in the interval in order to find the root
     }

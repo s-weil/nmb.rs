@@ -43,27 +43,28 @@ where
 #[cfg(test)]
 mod tests {
     use approx::assert_abs_diff_eq;
+    use std::f64::consts::SQRT_2;
 
     #[test]
-    fn root() {
+    fn newton_root_quadratic() {
         let f = |x: f64| x * x - 2.0;
         let df = |x: f64| 2.0 * x;
 
         // variant 1: start above the right root
         let root = super::newton(f, df, 3.0, None);
-        assert_abs_diff_eq!(root.unwrap(), 1.414213562373095, epsilon = 1e-15);
+        assert_abs_diff_eq!(root.unwrap(), SQRT_2, epsilon = 1e-15);
 
         // variant 2: start below the right root
         let root = super::newton(f, df, 0.1, None);
-        assert_abs_diff_eq!(root.unwrap(), 1.414213562373095, epsilon = 1e-15);
+        assert_abs_diff_eq!(root.unwrap(), SQRT_2, epsilon = 1e-15);
 
         // variant 3: start above the left root
         let root = super::newton(f, df, -0.1, None);
-        assert_abs_diff_eq!(root.unwrap(), -1.414213562373095, epsilon = 1e-15);
+        assert_abs_diff_eq!(root.unwrap(), -SQRT_2, epsilon = 1e-15);
 
         // variant 4: start below the left root
         let root = super::newton(f, df, -3.0, None);
-        assert_abs_diff_eq!(root.unwrap(), -1.414213562373095, epsilon = 1e-15);
+        assert_abs_diff_eq!(root.unwrap(), -SQRT_2, epsilon = 1e-15);
     }
 
     #[test]
