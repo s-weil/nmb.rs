@@ -1,11 +1,9 @@
 use crate::AsSlice;
 use nmbrs_algebra::{NumericField, NumericSemiGroup};
 
-/* TODOs:
-- splt into descriptive and inferential stats and ordered and unordered stats
-- math formulas
-- combined stats (returning mean and std) for perf reasons
-- furhter metrics */
+/*
+Array statistics provides routines optimized for single-dimensional arrays.
+ */
 
 // TODO: don't need a ring here
 pub fn sum<T>(xs: &[T]) -> Option<T>
