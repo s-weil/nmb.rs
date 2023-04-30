@@ -1,5 +1,5 @@
 use crate::AsSlice;
-use nmbrs_algebra::{MidPoint, NumericField, NumericSemiGroup};
+use nmbrs_algebra::{NumericField, NumericSemiGroup};
 
 /* TODOs:
 - splt into descriptive and inferential stats and ordered and unordered stats
@@ -100,7 +100,9 @@ where
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VarianceBias {
+    /// Biased estimator of the population variance.
     Population,
+    /// Unbiased estimator for the sample variance.
     #[default]
     Sample,
 }
@@ -198,74 +200,22 @@ where
     }
 }
 
-/// Calculates the [empirical percentile](https://en.wikipedia.org/wiki/Percentile) of the _sorted_ samples.
-/// The samples are assumed to be sorted in ascending order and level is assumed to be in the range `[0, 1]`.
-pub fn percentile<T>(sorted_xs: &[T], level: f64) -> Option<T>
-where
-    T: NumericField + MidPoint + Copy,
-{
-    if !(0.0..=1.0).contains(&level) {
-        return None;
-    }
-    if sorted_xs.is_empty() {
-        return None;
-    }
-
-    let n = sorted_xs.len();
-
-    // NOTE: have to add `-1` below due to (mathematical) idx start of 1 (rather than 0)
-    let candidate_idx: f64 = n as f64 * level;
-    let floored: usize = candidate_idx.floor() as usize;
-
-    // case candidate is an integer
-    if candidate_idx == floored as f64 {
-        let idx_bottom = (floored - 1).max(0);
-        let idx_top = floored.min(n);
-        return Some(sorted_xs[idx_bottom].mid_point(sorted_xs[idx_top]));
-    }
-    let idx = ((candidate_idx + 1.0).floor().min(n as f64) as usize - 1).max(0);
-    Some(sorted_xs[idx])
-}
-
-pub trait Percentile<T> {
-    fn percentile(&self, level: f64) -> Option<T>;
-
-    fn median(&self) -> Option<T> {
-        self.percentile(0.5)
-    }
-
-    fn p75(&self) -> Option<T> {
-        self.percentile(0.75)
-    }
-
-    fn p25(&self) -> Option<T> {
-        self.percentile(0.25)
-    }
-}
-
-impl<'a, T, S> Percentile<T> for S
-where
-    S: AsSlice<T>,
-    T: 'a + NumericField + MidPoint + Copy,
-{
-    fn percentile(&self, level: f64) -> Option<T> {
-        percentile(self.as_slice(), level)
-    }
-}
+// TODO: add skewness
+// https://en.wikipedia.org/wiki/Skewness#Sample_skewness
 
 #[cfg(test)]
 mod test {
-    use crate::descriptive_stats::array_stats::VarianceBias;
-
-    use super::{Covariance, Dot, Mean, Percentile, Sum, Variance};
+    use super::{Covariance, Dot, Mean, Sum, Variance, VarianceBias};
 
     #[test]
     fn sum() {
         assert_eq!(super::sum(&Vec::with_capacity(0)) as Option<f64>, None);
-        assert_eq!(super::sum(&[]) as Option<f64>, None);
+        assert_eq!(super::sum::<i32>(&[]), None);
+
+        let xs = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        assert_eq!(super::sum::<i8>(&xs), Some(4 * 10 + 5));
 
         let xs = vec![1.0, 1.0, 2.0];
-
         assert_eq!(super::sum(&xs), xs.sum());
         assert_eq!(super::sum(&xs), Some(4.0));
 
@@ -276,6 +226,7 @@ mod test {
     #[test]
     fn mean() {
         assert_eq!(super::mean(&Vec::with_capacity(0)) as Option<f64>, None);
+        assert!(super::mean::<i8>(&[]).is_none());
 
         let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         assert_eq!(super::mean(&xs), xs.mean());
@@ -309,13 +260,12 @@ mod test {
 
         let xs: &[f32] = &[1.0, 2.0, 3.0, 4.0, 5.0];
         assert_eq!(
-            super::variance(&xs, Some(VarianceBias::Population)),
+            super::variance(xs, Some(VarianceBias::Population)),
             Some(2.0)
         );
 
         let _xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // assert_eq!(super::variance(&xs), Some(2.));
-        // assert_eq!(super::variance(&xs), super::covariance(&xs, &xs)); // TODO: rescale
     }
 
     #[test]
@@ -369,28 +319,11 @@ mod test {
         assert_eq!(super::covariance(&xs, &ys), Some(2.5));
         assert_eq!(super::covariance(&xs, &ys), xs.covariance(ys));
 
+        assert_eq!(super::covariance(&xs, &xs), xs.sample_variance());
+
         // let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
         // assert_eq!(super::covariance(&xs, &ys), Some(154.0));
-    }
-
-    #[test]
-    fn percentile() {
-        let mut samples = vec![82., 91., 12., 92., 63., 9., 28., 55., 96., 97.];
-        samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-        let median = super::percentile(&samples, 0.5);
-        assert_eq!(median, Some(72.5));
-        assert_eq!(super::percentile(&samples, 0.5), samples.percentile(0.5));
-        assert_eq!(super::percentile(&samples, 0.5), samples.median());
-
-        let quartile_fst = super::percentile(&samples, 0.25);
-        assert_eq!(quartile_fst, Some(28.0));
-        assert_eq!(super::percentile(&samples, 0.25), samples.p25());
-
-        let quartile_trd = super::percentile(&samples, 0.75);
-        assert_eq!(quartile_trd, Some(92.0));
-        assert_eq!(super::percentile(&samples, 0.75), samples.p75());
     }
 
     use approx::assert_abs_diff_eq;
@@ -399,20 +332,20 @@ mod test {
     #[test]
     fn mean1() {
         let data = [
-            5.3766713954610001e-01,
-            1.8338850145950865e+00,
-            -2.2588468610036481e+00,
-            8.6217332036812055e-01,
-            3.1876523985898081e-01,
-            -1.3076882963052734e+00,
-            -4.3359202230568356e-01,
-            3.4262446653864992e-01,
-            3.5783969397257605e+00,
-            2.7694370298848772e+00,
+            5.376_671_395_461e-1,
+            1.833_885_014_595_086_5,
+            -2.258_846_861_003_648,
+            8.621_733_203_681_206e-1,
+            3.187_652_398_589_808e-1,
+            -1.307_688_296_305_273_4,
+            -4.335_920_223_056_835_6e-1,
+            3.426_244_665_386_499e-1,
+            3.578_396_939_725_760_5,
+            2.769_437_029_884_877,
         ];
         assert_abs_diff_eq!(
             super::mean(&data).unwrap(),
-            6.2428219709029698e-01,
+            6.242_821_970_902_97e-1,
             epsilon = EPSILON
         );
     }
@@ -425,31 +358,21 @@ mod test {
     #[test]
     fn sample_variance1() {
         let xs = &[
-            5.3766713954610001e-01,
-            1.8338850145950865e+00,
-            -2.2588468610036481e+00,
-            8.6217332036812055e-01,
-            3.1876523985898081e-01,
-            -1.3076882963052734e+00,
-            -4.3359202230568356e-01,
-            3.4262446653864992e-01,
-            3.5783969397257605e+00,
-            2.7694370298848772e+00,
+            5.376_671_395_461e-1,
+            1.833_885_014_595_086_5,
+            -2.258_846_861_003_648,
+            8.621_733_203_681_206e-1,
+            3.187_652_398_589_808e-1,
+            -1.307_688_296_305_273_4,
+            -4.335_920_223_056_835_6e-1,
+            3.426_244_665_386_499e-1,
+            3.578_396_939_725_760_5,
+            2.769_437_029_884_877,
         ];
         assert_abs_diff_eq!(
             super::variance(xs, Some(VarianceBias::Sample)).unwrap(),
-            3.1324921339484746e+00,
+            3.132_492_133_948_474_6,
             epsilon = EPSILON
         );
     }
-
-    // #[test]
-    // fn variance_0() {
-    //     assert!(super::population_variance::<f64>(&[]).is_none());
-    // }
-
-    // #[test]
-    // fn variance_1() {
-    //     assert_eq!(super::population_variance::<f64>(&[1.0]), Some(0.0));
-    // }
 }
