@@ -1,1 +1,1 @@
-mod root_finder;
+pub mod root_finder;

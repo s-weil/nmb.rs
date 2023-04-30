@@ -17,7 +17,7 @@ where
     }
 
     let mut f_a = f(a);
-    let mut f_b = f(b);
+    let f_b = f(b);
 
     if f_a * f_b > 0.0 {
         // TODO: proper error handling
@@ -47,7 +47,7 @@ where
     while delta > tol && f_mid.abs() > tol && iterations < max_iterations {
         if f_a * f_mid < 0.0 {
             b = mid;
-            f_b = f_mid;
+            // f_b = f_mid;
         } else {
             a = mid;
             f_a = f_mid;
