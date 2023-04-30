@@ -100,7 +100,9 @@ where
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VarianceBias {
+    /// Biased estimator of the population variance.
     Population,
+    /// Unbiased estimator for the sample variance.
     #[default]
     Sample,
 }
@@ -368,6 +370,8 @@ mod test {
         let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0];
         assert_eq!(super::covariance(&xs, &ys), Some(2.5));
         assert_eq!(super::covariance(&xs, &ys), xs.covariance(ys));
+
+        assert_eq!(super::covariance(&xs, &xs), xs.sample_variance());
 
         // let xs = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         // let ys = vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
