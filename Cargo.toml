@@ -1,2 +1,9 @@
+# [package]
+# name = "nmbrs"
+# version = "0.1.0"
+# edition = "2021"
+# authors = ["sweil"]
+
 [workspace]
-members = [ "algebra", "statistics" ]
+members = [ "libs/nmbrs_algebra", "libs/nmbrs_statistics" ]
+# members = [ "./libs/*" ]
