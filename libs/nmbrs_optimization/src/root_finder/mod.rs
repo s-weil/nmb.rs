@@ -1,8 +1,10 @@
 mod bisection;
 mod newton;
+mod steffensen;
 
 pub use bisection::bisection;
 pub use newton::newton;
+pub use steffensen::steffensen;
 
 #[derive(Debug, Clone)]
 pub struct RootFinderConfig {
@@ -63,6 +65,12 @@ impl Default for RootFinderConfig {
 /// assert!( (root.unwrap() - 2.0_f64.sqrt()).abs() < 1e-15);
 /// // if you select an interval for which both $f(a)$ and $f(b)$ have the same sign, the algorithm will fail
 /// assert!(BracketingSolver::bisection(f, -1.0, 1.0).try_find_root(None).is_none());
+///
+/// // use the Steffensen algorithm which requires a guess for the starting point
+/// let root = BracketingSolver::steffensen(f, 3.0).try_find_root(None);
+/// assert!( (root.unwrap() - 2.0_f64.sqrt()).abs() < 1e-15);
+/// // if you start with a guess that is too far away from the root, the algorithm might fail
+/// assert!(BracketingSolver::steffensen(f, -3.0).try_find_root(None).is_none());
 /// ```
 pub trait RootSolver {
     fn try_find_root(&self, config: Option<RootFinderConfig>) -> Option<f64>;
@@ -70,6 +78,7 @@ pub trait RootSolver {
 
 pub enum BracketingSolver<F> {
     Bisection { f: F, a: f64, b: f64 },
+    Steffensen { f: F, x0: f64 },
 }
 
 impl<F> BracketingSolver<F>
@@ -78,6 +87,10 @@ where
 {
     pub fn bisection(f: F, a: f64, b: f64) -> Self {
         Self::Bisection { f, a, b }
+    }
+
+    pub fn steffensen(f: F, x0: f64) -> Self {
+        Self::Steffensen { f, x0 }
     }
 }
 
@@ -88,6 +101,7 @@ where
     fn try_find_root(&self, config: Option<RootFinderConfig>) -> Option<f64> {
         match self {
             Self::Bisection { f, a, b } => bisection(f, *a, *b, config),
+            Self::Steffensen { f, x0 } => steffensen(f, *x0, config),
         }
     }
 }
