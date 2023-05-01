@@ -1,9 +1,11 @@
 mod bisection;
 mod newton;
+mod secant;
 mod steffensen;
 
 pub use bisection::bisection;
 pub use newton::newton;
+pub use secant::secant;
 pub use steffensen::steffensen;
 
 #[derive(Debug, Clone)]
@@ -71,14 +73,23 @@ impl Default for RootFinderConfig {
 /// assert!( (root.unwrap() - 2.0_f64.sqrt()).abs() < 1e-15);
 /// // if you start with a guess that is too far away from the root, the algorithm might fail
 /// assert!(BracketingSolver::steffensen(f, -3.0).try_find_root(None).is_none());
+///
+/// // use the secant algorithm which requires two guesses for the starting point
+/// let root = BracketingSolver::secant(f, 0.0, 3.0).try_find_root(None);
+/// assert!( (root.unwrap() - 2.0_f64.sqrt()).abs() < 1e-15);
+/// // if you start with a guesses that are symmetically located around a point with zero derivative, the algorithm might fail
+/// assert!(BracketingSolver::secant(f, -3.0, 3.0).try_find_root(None).is_none());
 /// ```
 pub trait RootSolver {
     fn try_find_root(&self, config: Option<RootFinderConfig>) -> Option<f64>;
+    // TODO: return a Result instead of an Option, return also number of iterations and tolerance
 }
 
+// TODO: rename
 pub enum BracketingSolver<F> {
     Bisection { f: F, a: f64, b: f64 },
     Steffensen { f: F, x0: f64 },
+    Secant { f: F, x0: f64, x1: f64 },
 }
 
 impl<F> BracketingSolver<F>
@@ -92,6 +103,10 @@ where
     pub fn steffensen(f: F, x0: f64) -> Self {
         Self::Steffensen { f, x0 }
     }
+
+    pub fn secant(f: F, x0: f64, x1: f64) -> Self {
+        Self::Secant { f, x0, x1 }
+    }
 }
 
 impl<F> RootSolver for BracketingSolver<F>
@@ -102,6 +117,7 @@ where
         match self {
             Self::Bisection { f, a, b } => bisection(f, *a, *b, config),
             Self::Steffensen { f, x0 } => steffensen(f, *x0, config),
+            Self::Secant { f, x0, x1 } => secant(f, *x0, *x1, config),
         }
     }
 }

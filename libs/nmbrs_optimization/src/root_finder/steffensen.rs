@@ -96,13 +96,13 @@ mod tests {
         let root = super::steffensen(f, 0.0, None);
         assert_abs_diff_eq!(root.unwrap(), -SQRT_2, epsilon = 1e-15);
 
-        // variant 4: start left of the left root but sufficiently close
+        // variant 5: start left of the left root but sufficiently close
         let root = super::steffensen(f, -1.45, None);
         assert_abs_diff_eq!(root.unwrap(), -SQRT_2, epsilon = 1e-15);
     }
 
     #[test]
-    fn no_root() {
+    fn steffenson_no_root() {
         let f = |x: f64| x * x - 2.0;
 
         // start left of the left root, but too far away

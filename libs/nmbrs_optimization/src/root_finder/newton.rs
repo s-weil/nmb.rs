@@ -68,7 +68,7 @@ mod tests {
     }
 
     #[test]
-    fn no_root() {
+    fn newton_no_root() {
         let f = |x: f64| x * x - 2.0;
         let df = |x: f64| 2.0 * x;
 
