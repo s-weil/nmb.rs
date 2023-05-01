@@ -33,8 +33,9 @@ def steff(f: Func, x: float) -> Iterator[float]:
             yield x            # Yield value
  */
 
-/// Steffensen's method for finding a root of a function.
-/// https://en.wikipedia.org/wiki/Steffensen%27s_method
+/// [Steffensen's method](https://en.wikipedia.org/wiki/Secant_method) for finding a root of a function `f`
+/// is similiar to Newton's method, but uses a first-order divided difference function as approximation for the
+/// derivative of `f`.
 pub fn steffensen<F>(f: F, x0: f64, config: Option<RootFinderConfig>) -> Option<f64>
 where
     F: Fn(f64) -> f64,

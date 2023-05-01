@@ -1,9 +1,7 @@
 use crate::root_finder::RootFinderConfig;
 
-/// implementation of the bisection algorithm
-/// https://en.wikipedia.org/wiki/Bisection_method
-/// https://mathworld.wolfram.com/Bisection.htm
-/// https://github.com/mathnet/mathnet-numerics/blob/master/src/Numerics/RootFinding/Bisection.csl
+/// The [Bisection method](https://en.wikipedia.org/wiki/Bisection_method) is a root-finding method that applies
+/// to any continuous function for which one knows two values `a` and `b` with opposite signs for `f(a)` and `f(b)`.
 pub fn bisection<F>(f: F, a: f64, b: f64, config: Option<RootFinderConfig>) -> Option<f64>
 where
     F: Fn(f64) -> f64,

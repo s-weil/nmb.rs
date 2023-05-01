@@ -1,8 +1,7 @@
 use super::RootFinderConfig;
 
-/// The Newton-Raphson method for root finding
-/// https://en.wikipedia.org/wiki/Newton%27s_method
-/// https://mathworld.wolfram.com/NewtonsMethod.html
+/// The [Newton-Raphson method](https://en.wikipedia.org/wiki/Secant_method) for finding
+/// a root of a function `f`, given the derivative `df` of `f` and an initial guess `x0` for the root.
 pub fn newton<F, DF>(f: F, df: DF, x0: f64, config: Option<RootFinderConfig>) -> Option<f64>
 where
     F: Fn(f64) -> f64,

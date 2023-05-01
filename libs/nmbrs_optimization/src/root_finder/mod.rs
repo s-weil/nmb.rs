@@ -50,7 +50,7 @@ impl Default for RootFinderConfig {
 ///
 /// ```rust
 /// use nmbrs_optimization::root_finder::RootSolver;
-/// // define the function $f(x) = x^2 - 2$ for which we want to find the root
+/// // define the function $f(x) = x^2 - 2$ for which we want to find one the two roots
 /// let f = |x: f64| x * x - 2.0;
 ///
 /// // use the Newton Raphson algorithm which requires the derivative of f and a guess for the starting point
@@ -124,6 +124,7 @@ where
 
 pub enum DerivativeSolver<F, DF> {
     NewtonRaphson { f: F, df: DF, x0: f64 },
+    // TODO: add combinations (Brent, etc)
 }
 
 impl<F, DF> RootSolver for DerivativeSolver<F, DF>

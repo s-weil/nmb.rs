@@ -8,12 +8,12 @@ def secant_method(f, x0, x1, iterations):
     for i in range(iterations):
         x2 = x1 - f(x1) * (x1 - x0) / float(f(x1) - f(x0))
         x0, x1 = x1, x2
-        # Apply a stopping criterion here
+        # Apply a stopping criterion here/usr/share/code/resources/app/out/vs/code/electron-sandbox/workbench/workbench.html
     return x2
 */
 
-/// Steffensen's method for finding a root of a function.
-/// https://en.wikipedia.org/wiki/Steffensen%27s_method
+/// The [Secant method](https://en.wikipedia.org/wiki/Secant_method) for finding roots of a function `f`,
+/// provided two initial distinct guesses `x0` and `x1`  (ideally close to the root) for the root of `f`.
 pub fn secant<F>(f: F, x0: f64, x1: f64, config: Option<RootFinderConfig>) -> Option<f64>
 where
     F: Fn(f64) -> f64,
