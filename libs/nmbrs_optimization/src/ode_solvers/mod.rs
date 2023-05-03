@@ -1,17 +1,31 @@
 mod runge_kutta;
 
-<<<<<<< HEAD
+type T = f64;
+
+pub trait Ode<const D: usize> {
+    /// The function `f` in the problem `dy/dt = f(t, y(t))`
+    fn f(t: T, y: &[T; D]) -> [T; D];
+}
+
+// impl<const D: usize, F> Ode<D> for F
+// where
+//     F: Fn(T, &[T; D]) -> [T; D],
+// {
+//     fn f(t: T, y: &[T; D]) -> [T; D] {
+//         F(t, y)
+//     }
+// }
+
 pub trait InitialValueOde<const D: usize> {
     /// The function `f` in the problem `dy/dt = f(t, y(t))`
     fn f(t: f64, y: &[f64; D]) -> [f64; D];
 
     /// The intial value `y_0`.
-    fn initial_value() -> [f64; D];
-=======
-pub trait OdeInitialValueProblem<const N: usize> {
-    /// The function `f` in the problem `dy/dt = f(t, y(t))`
-    fn f(t: f64, y: &[f64; N]) -> [f64; N];
+    fn y0() -> [f64; D];
+}
 
-    fn initial_value();
->>>>>>> bf1a759a813b1c94dbf7a7e1065b2a08dc00cdfa
+pub trait OdeSolver<const D: usize> {
+    fn solve<F>(ode: F, t: f64, n: usize) -> Vec<[f64; D]>
+    where
+        F: InitialValueOde<D>;
 }
