@@ -27,6 +27,33 @@ public static double[] SecondOrder(double y0, double start, double end, int N, F
     return y;
 } */
 
+pub fn runge_kutta_second_order_1d<F>(f: F, y0: f64, t: f64, n: usize) -> Vec<f64>
+where
+    F: Fn(T, f64) -> f64,
+{
+    let dt = t / n as f64;
+    let mut t = 0.0;
+
+    let mut ys = Vec::with_capacity(n + 1);
+
+    let mut y0 = y0;
+    ys.push(y0);
+
+    for _i in 0..n {
+        // evaluate f at t, y0
+        let k1 = f(t, y0);
+        // evaluate f at t + dt, y0 + k1 * dt
+        let k2 = f(t + dt, y0 + k1 * dt);
+        let y = y0 + dt * 0.5 * (k1 + k2);
+        y0 = y;
+        ys.push(y);
+        t += dt;
+    }
+
+    dbg!(ys.len(), t, y0);
+    ys
+}
+
 fn scalar<const D: usize>(scalar: f64, vec: &[f64; D]) -> [f64; D] {
     let mut v = *vec;
     for i in 0..D {
@@ -68,56 +95,77 @@ where
         t += dt;
     }
 
+    assert_eq!(ys.len(), n);
     ys
 }
 
 #[cfg(test)]
 mod tests {
-
-    /*
-           /// <summary>
-           /// Runge-Kutta second order method for first order ODE.
-           /// </summary>
-           [Test]
-           public void RK2Test()
-           {
-               Func<double, double, double> ode = (t, y) => t + 2 * y * t;
-               Func<double, double> sol = (t) => 0.5 * (Math.Exp(t * t) - 1);
-               double ratio = double.NaN;
-               double error = 0;
-               double oldError = 0;
-               for (int k = 0; k < 4; k++)
-               {
-                   double y0 = 0;
-                   double[] y_t = RungeKutta.SecondOrder(y0, 0, 2, Convert.ToInt32(Math.Pow(2, k + 6)), ode);
-                   error = Math.Abs(sol(2) - y_t.Last());
-                   if (oldError != 0)
-                       ratio = Math.Log(oldError / error, 2);
-                   oldError = error;
-                   //Console.WriteLine(string.Format("{0}, {1}", error, ratio));
-               }
-               Assert.AreEqual(2, ratio, 0.01);// Check error convergence order
-           }
-    */
+    use approx::assert_abs_diff_eq;
 
     #[test]
-    fn runge_kutta_second_order() {
-        let ode_f = |t: f64, y: &[f64; 1]| super::add(&[t], &super::scalar(2.0 * t, y));
-        let _sol = |t: f64| 0.5 * (t.exp() - 1.0);
-        let _ratio = f64::NAN;
-        let _error = 0.0;
-        let _old_error = 0.0;
-        for k in 0..4 {
-            let y0 = [0.0];
-            let y_t = super::runge_kutta_second_order(ode_f, y0, 2.0, 2.0_f64.powi(k + 6) as usize);
-            dbg!(y_t);
-            // error = (sol(2.0) - y_t.last()).abs();
-            // if old_error != 0.0 {
-            //     ratio = (old_error / error).log();
-            // }
-            // old_error = error;
-            //Console.WriteLine(string.Format("{0}, {1}", error, ratio));
+    fn runge_kutta_second_order_1d_convegence_order() {
+        let a = 1.0;
+        let b = 1.0;
+        let f = |t, y| a * y + b;
+        let y0 = 0.0;
+
+        let sol = |t: f64| 0.5 * ((t * t).exp() - 1.0);
+
+        let t = 2.0;
+        let sol_2 = sol(t);
+
+        let mut ratio: f64 = f64::NAN;
+        let mut error = 0.0;
+        let mut old_error = 0.0;
+
+        for k in 5..10 {
+            let n = 2_usize.pow(k);
+            let ys = super::runge_kutta_second_order_1d(f, y0, t, n);
+
+            for i in 0..n {
+                let h = t / n as f64;
+                let sol_i = sol(i as f64 * h);
+                let err_i = (sol(i as f64 * h) - ys[i]).abs();
+                let upper_bound = 100.0 * h.powi(2);
+                dbg!(err_i, sol_i, ys[i], i, n, h, upper_bound);
+                assert!(err_i <= upper_bound);
+            }
         }
-        assert!(false);
     }
+    // #[test]
+    // fn runge_kutta_second_order_1d_convegence_order() {
+    //     let f = |t, y| t + 2.0 * y * t;
+    //     let y0 = 0.0;
+
+    //     let sol = |t: f64| 0.5 * ((t * t).exp() - 1.0);
+
+    //     let t = 2.0;
+    //     let sol_2 = sol(t);
+
+    //     let mut ratio: f64 = f64::NAN;
+    //     let mut error = 0.0;
+    //     let mut old_error = 0.0;
+
+    //     for k in 5..10 {
+    //         let n = 2_usize.pow(k);
+    //         let ys = super::runge_kutta_second_order_1d(f, y0, t, n);
+
+    //         for i in 0..n {
+    //             let h = t / n as f64;
+    //             let err_i = (sol(i as f64 * h) - ys[i]).abs();
+    //             let upper_bound = 40.0 * k as f64 * h.powi(2);
+    //             dbg!(err_i, i, n, h, upper_bound);
+    //             assert!(err_i <= upper_bound);
+    //             // assert_abs_diff_eq!(err_i, h.powi(2), epsilon = 0.01);
+    //         }
+    //         // error = (sol_2 - y_t[n - 1]).abs();
+
+    //         // if error != 0.0 {
+    //         //     ratio = (old_error / error).log2();
+    //         // }
+    //         // old_error = error;
+    //     }
+    //     // assert_abs_diff_eq!(2.0, ratio, epsilon = 0.001);
+    // }
 }
