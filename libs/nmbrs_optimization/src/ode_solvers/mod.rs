@@ -3,18 +3,9 @@ mod runge_kutta;
 type T = f64;
 
 pub trait Ode<const D: usize> {
-    /// The function `f` in the problem `dy/dt = f(t, y(t))`
+    /// The function `f` in the problem `dy/dt = f(t, y)`
     fn f(t: T, y: &[T; D]) -> [T; D];
 }
-
-// impl<const D: usize, F> Ode<D> for F
-// where
-//     F: Fn(T, &[T; D]) -> [T; D],
-// {
-//     fn f(t: T, y: &[T; D]) -> [T; D] {
-//         F(t, y)
-//     }
-// }
 
 pub trait InitialValueOde<const D: usize> {
     /// The function `f` in the problem `dy/dt = f(t, y(t))`
