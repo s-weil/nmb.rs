@@ -39,8 +39,8 @@ impl RootFinderConfig {
 impl Default for RootFinderConfig {
     fn default() -> Self {
         Self {
-            max_iterations: (100),
-            tolerance: (1e-15),
+            max_iterations: 100,
+            tolerance: 1e-15,
         }
     }
 }
@@ -82,7 +82,7 @@ impl Default for RootFinderConfig {
 /// ```
 pub trait RootSolver {
     fn try_find_root(&self, config: Option<RootFinderConfig>) -> Option<f64>;
-    // TODO: return a Result instead of an Option, return also number of iterations and tolerance
+    // TODO: return a Result instead of an Option, return also number of iterations and tolerance as metrics of convergence
 }
 
 // TODO: rename
