@@ -7,7 +7,7 @@ use crate::ode_solvers::T;
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
-pub fn runge_kutta_second_order_1d<F>(f: F, y0: f64, t_end: f64, n: usize) -> Vec<(f64, f64)>
+pub fn rk2<F>(f: F, y0: f64, t_end: f64, n: usize) -> Vec<(f64, f64)>
 where
     F: Fn(T, f64) -> f64,
 {
@@ -25,6 +25,32 @@ where
         let k2 = f(t + dt, y_t + dt * k1);
         // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt, that is with k1 and k2
         let y = y_t + 0.5 * dt * (k1 + k2);
+        y_t = y;
+        t += dt;
+        ys.push((t, y));
+    }
+
+    ys
+}
+
+pub fn rk4<F>(f: F, y0: f64, t_end: f64, n: usize) -> Vec<(f64, f64)>
+where
+    F: Fn(T, f64) -> f64,
+{
+    let dt = t_end / n as f64;
+    let mut ys = Vec::with_capacity(n + 1);
+
+    let mut t = 0.0;
+    let mut y_t = y0;
+    ys.push((t, y_t));
+
+    while t < t_end {
+        // evaluate f at t, y_t
+        let k1 = f(t, y_t);
+        let k2 = f(t + dt / 2.0, y_t + dt / 2.0 * k1);
+        let k3 = f(t + dt / 2.0, y_t + dt / 2.0 * k2);
+        let k4 = f(t + dt, y_t + dt * k3);
+        let y = y_t + dt / 6.0 * (k1 + 2.0 * (k2 + k3) + k4);
         y_t = y;
         t += dt;
         ys.push((t, y));
@@ -121,14 +147,41 @@ mod tests {
         // solution
         let sol = |t: f64| -(1.0 - t.cos()).exp();
 
-        let t_end = 2.0;
+        let t_end = 10.0;
 
         for k in 5..10 {
             let n = 2_usize.pow(k);
-            let ys = super::runge_kutta_second_order_1d(f, y0, t_end, n);
+            let ys = super::rk2(f, y0, t_end, n);
 
             let h = t_end / n as f64;
             let upper_bound = 5.0 * h.powi(2);
+
+            for i in 0..n {
+                let (t_i, y_i) = ys[i];
+                let sol_i = sol(t_i);
+                let err_i = (sol_i - y_i).abs();
+                assert!(err_i <= upper_bound);
+            }
+        }
+    }
+
+    #[test]
+    fn runge_kutta_fourth_order_1d_convegence() {
+        // initial value problem
+        let f = |t: f64, y| y * t.sin();
+        let y0 = -1.0;
+
+        // solution
+        let sol = |t: f64| -(1.0 - t.cos()).exp();
+
+        let t_end = 10.0;
+
+        for k in 5..10 {
+            let n = 2_usize.pow(k);
+            let ys = super::rk4(f, y0, t_end, n);
+
+            let h = t_end / n as f64;
+            let upper_bound = 1.0 * h.powi(4);
 
             for i in 0..n {
                 let (t_i, y_i) = ys[i];
