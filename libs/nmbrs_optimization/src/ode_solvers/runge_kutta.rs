@@ -1,5 +1,3 @@
-use crate::ode_solvers::T;
-
 use crate::ode_solvers::{OdeState1D, OdeStepSolver1D};
 
 // TODO: add D=1 case for scalar like odes;
@@ -83,50 +81,50 @@ impl OdeStepSolver1D for Rk4Solver {
     }
 }
 
-fn scalar<const D: usize>(scalar: f64, vec: &[f64; D]) -> [f64; D] {
-    let mut v = *vec;
-    for i in 0..D {
-        v[i] *= scalar;
-    }
-    v
-}
+// fn scalar<const D: usize>(scalar: f64, vec: &[f64; D]) -> [f64; D] {
+//     let mut v = *vec;
+//     for i in 0..D {
+//         v[i] *= scalar;
+//     }
+//     v
+// }
 
-fn add<const D: usize>(vec1: &[f64; D], vec2: &[f64; D]) -> [f64; D] {
-    let mut v = *vec1;
-    for i in 0..D {
-        v[i] += vec2[i];
-    }
-    v
-}
+// fn add<const D: usize>(vec1: &[f64; D], vec2: &[f64; D]) -> [f64; D] {
+//     let mut v = *vec1;
+//     for i in 0..D {
+//         v[i] += vec2[i];
+//     }
+//     v
+// }
 
-pub fn runge_kutta_second_order<const D: usize, F>(
-    f: F,
-    y0: [f64; D],
-    t_end: f64,
-    n: usize,
-) -> Vec<[f64; D]>
-where
-    F: Fn(T, &[T; D]) -> [T; D],
-{
-    let dt = t_end / n as f64;
-    let mut t = 0.0;
+// pub fn runge_kutta_second_order<const D: usize, F>(
+//     f: F,
+//     y0: [f64; D],
+//     t_end: f64,
+//     n: usize,
+// ) -> Vec<[f64; D]>
+// where
+//     F: Fn(T, &[T; D]) -> [T; D],
+// {
+//     let dt = t_end / n as f64;
+//     let mut t = 0.0;
 
-    let mut ys = Vec::with_capacity(n + 1);
+//     let mut ys = Vec::with_capacity(n + 1);
 
-    let mut y0 = y0;
+//     let mut y0 = y0;
 
-    while t < t_end {
-        let k1 = f(t, &y0);
-        let k2 = f(t + dt, &add(&y0, &scalar(dt, &k1)));
-        let y = add(&y0, &scalar(dt * 0.5, &(add(&k1, &k2))));
-        y0 = y;
-        t += dt;
-        ys.push(y);
-    }
+//     while t < t_end {
+//         let k1 = f(t, &y0);
+//         let k2 = f(t + dt, &add(&y0, &scalar(dt, &k1)));
+//         let y = add(&y0, &scalar(dt * 0.5, &(add(&k1, &k2))));
+//         y0 = y;
+//         t += dt;
+//         ys.push(y);
+//     }
 
-    assert_eq!(ys.len(), n);
-    ys
-}
+//     assert_eq!(ys.len(), n);
+//     ys
+// }
 
 #[cfg(test)]
 mod tests {
@@ -209,7 +207,7 @@ mod tests {
             let ys = super::Rk4Solver.integrate(f, initial_state.clone(), t_end, n);
 
             let h = t_end / n as f64;
-            let upper_bound = 5.0 * h.powi(2);
+            let upper_bound = 5.0 * h.powi(4);
 
             for i in 0..n {
                 let s_i = &ys[i];

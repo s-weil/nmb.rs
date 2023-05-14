@@ -1,6 +1,8 @@
+mod euler;
 mod runge_kutta;
 
-type T = f64;
+pub use euler::EulerSolver;
+pub use runge_kutta::{Rk2Solver, Rk4Solver};
 
 // pub trait Ode<const D: usize> {
 //     /// The function `f` in the problem `dy/dt = f(t, y)`
@@ -20,6 +22,52 @@ pub trait OdeStepSolver1D {
         F: Fn(&OdeState1D) -> f64;
 }
 
+/// Solver for a first order ordninary differential equation ... // TODO
+/// ```rust
+/// use nmbrs_optimization::ode_solvers::{OdeSolver1D, OdeState1D};
+///
+/// // the initial value problem...
+/// let f = |s: &OdeState1D| s.t.sin() * s.y ;
+/// let initial_state = OdeState1D { t: 0.0, y: -1.0 };
+///
+/// // ...has the solution
+/// let sol = |t: f64| -(1.0 - t.cos()).exp();
+///
+/// let n = 1_000;
+/// let t_end = 10.0;
+/// let dt = t_end / n as f64;
+///
+///
+/// // Euler of order 2...
+/// use nmbrs_optimization::ode_solvers::EulerSolver;
+/// let approximation_euler = EulerSolver.integrate(f, initial_state.clone(), t_end, n);
+///
+/// // ...has a convergence order of only 1
+/// let upper_bound = 20.0 * dt.powi(1);
+/// for s in approximation_euler {
+///     assert!((sol(s.t) - s.y).abs() <= upper_bound);
+/// }
+///
+/// // RungeKutta of order 2...
+/// use nmbrs_optimization::ode_solvers::Rk2Solver;
+/// let approximation_rk2 = Rk2Solver.integrate(f, initial_state.clone(), t_end, n);
+///
+/// // ...has a convergence order of 2
+/// let upper_bound = 20.0 * dt.powi(2);
+/// for s in approximation_rk2 {
+///     assert!((sol(s.t) - s.y).abs() <= upper_bound);
+/// }
+///
+/// // RungeKutta of order 4...
+/// use nmbrs_optimization::ode_solvers::Rk4Solver;
+/// let approximation_rk4 = Rk4Solver.integrate(f, initial_state, t_end, n);
+///
+/// // ...has a convergence order of 4
+/// let upper_bound = 20.0 * dt.powi(4);
+/// for s in approximation_rk4 {
+///     assert!((sol(s.t) - s.y).abs() <= upper_bound);
+/// }
+/// ```
 pub trait OdeSolver1D {
     fn integrate<F>(
         &self,
@@ -55,7 +103,6 @@ where
     S: OdeStepSolver1D,
     F: Fn(&OdeState1D) -> f64,
 {
-    // TODO: validation of inputs
     if t_end < initial_state.t || n < 1 {
         return Vec::with_capacity(0);
     }
@@ -75,3 +122,19 @@ where
 
     ys
 }
+
+#[derive(Debug)]
+pub enum OdeSolver {
+    Euler,
+    RungeKutta2,
+    RungeKutta4,
+}
+
+// impl OdeSolver {
+//     fn solver<S>(&self) -> S
+//     where
+//         S: OdeSolver1D,
+//     {
+//         todo!()
+//     }
+// }
