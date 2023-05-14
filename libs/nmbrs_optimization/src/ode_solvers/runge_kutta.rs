@@ -1,5 +1,7 @@
 use crate::ode_solvers::T;
 
+use crate::ode_solvers::{OdeState1D, OdeStepSolver1D};
+
 // TODO: add D=1 case for scalar like odes;
 // split in steps, maybe even have a trait for just solving one step
 
@@ -7,56 +9,78 @@ use crate::ode_solvers::T;
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
-pub fn rk2<F>(f: F, y0: f64, t_end: f64, n: usize) -> Vec<(f64, f64)>
-where
-    F: Fn(T, f64) -> f64,
-{
-    let dt = t_end / n as f64;
-    let mut ys = Vec::with_capacity(n + 1);
+pub struct Rk2Solver;
 
-    let mut t = 0.0;
-    let mut y_t = y0;
-    ys.push((t, y_t));
-
-    while t < t_end {
+impl Rk2Solver {
+    pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+    where
+        F: Fn(&OdeState1D) -> f64,
+    {
         // evaluate f at t, y_t
-        let k1 = f(t, y_t);
+        let k1 = f(state);
         // approximate f(t + dt, y1) via Euler f(t + dt, y + dt * f(t , y))
-        let k2 = f(t + dt, y_t + dt * k1);
-        // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt, that is with k1 and k2
-        let y = y_t + 0.5 * dt * (k1 + k2);
-        y_t = y;
-        t += dt;
-        ys.push((t, y));
-    }
+        let k2 = f(&OdeState1D {
+            t: state.t + dt,
+            y: state.y + dt * k1,
+        });
+        let weighted_slope = (k1 + k2) / 2.0;
 
-    ys
+        // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt, that is with k1 and k2
+        let nexte_state = OdeState1D {
+            t: state.t + dt,
+            y: state.y + dt * weighted_slope,
+        };
+        nexte_state
+    }
 }
 
-pub fn rk4<F>(f: F, y0: f64, t_end: f64, n: usize) -> Vec<(f64, f64)>
-where
-    F: Fn(T, f64) -> f64,
-{
-    let dt = t_end / n as f64;
-    let mut ys = Vec::with_capacity(n + 1);
-
-    let mut t = 0.0;
-    let mut y_t = y0;
-    ys.push((t, y_t));
-
-    while t < t_end {
-        // evaluate f at t, y_t
-        let k1 = f(t, y_t);
-        let k2 = f(t + dt / 2.0, y_t + dt / 2.0 * k1);
-        let k3 = f(t + dt / 2.0, y_t + dt / 2.0 * k2);
-        let k4 = f(t + dt, y_t + dt * k3);
-        let y = y_t + dt / 6.0 * (k1 + 2.0 * (k2 + k3) + k4);
-        y_t = y;
-        t += dt;
-        ys.push((t, y));
+impl OdeStepSolver1D for Rk2Solver {
+    fn solve_step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+    where
+        F: Fn(&OdeState1D) -> f64,
+    {
+        self.step(f, state, dt)
     }
+}
 
-    ys
+pub struct Rk4Solver;
+
+impl Rk4Solver {
+    pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+    where
+        F: Fn(&OdeState1D) -> f64,
+    {
+        let k1 = f(state);
+        let k2 = f(&OdeState1D {
+            t: state.t + dt / 2.0,
+            y: state.y + dt / 2.0 * k1,
+        });
+        let k3 = f(&OdeState1D {
+            t: state.t + dt / 2.0,
+            y: state.y + dt / 2.0 * k2,
+        });
+        let k4 = f(&OdeState1D {
+            t: state.t + dt,
+            y: state.y + dt * k3,
+        });
+        let weighted_slope = (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
+
+        // "Euler step"
+        let nexte_state = OdeState1D {
+            t: state.t + dt,
+            y: state.y + dt * weighted_slope,
+        };
+        nexte_state
+    }
+}
+
+impl OdeStepSolver1D for Rk4Solver {
+    fn solve_step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+    where
+        F: Fn(&OdeState1D) -> f64,
+    {
+        self.step(f, state, dt)
+    }
 }
 
 fn scalar<const D: usize>(scalar: f64, vec: &[f64; D]) -> [f64; D] {
@@ -138,28 +162,32 @@ mod tests {
     //     }
     // }
 
+    use crate::ode_solvers::OdeSolver1D;
+    use crate::ode_solvers::OdeState1D;
+
     #[test]
     fn runge_kutta_second_order_1d_convegence() {
         // initial value problem
-        let f = |t: f64, y| y * t.sin();
+        let f = |s: &OdeState1D| s.y * s.t.sin();
         let y0 = -1.0;
+        let initial_state = OdeState1D { t: 0.0, y: y0 };
 
         // solution
         let sol = |t: f64| -(1.0 - t.cos()).exp();
 
         let t_end = 10.0;
 
-        for k in 5..10 {
+        for k in 5..15 {
             let n = 2_usize.pow(k);
-            let ys = super::rk2(f, y0, t_end, n);
+            let ys = super::Rk2Solver.integrate(f, initial_state.clone(), t_end, n);
 
             let h = t_end / n as f64;
             let upper_bound = 5.0 * h.powi(2);
 
             for i in 0..n {
-                let (t_i, y_i) = ys[i];
-                let sol_i = sol(t_i);
-                let err_i = (sol_i - y_i).abs();
+                let s_i = &ys[i];
+                let sol_i = sol(s_i.t);
+                let err_i = (sol_i - s_i.y).abs();
                 assert!(err_i <= upper_bound);
             }
         }
@@ -168,25 +196,25 @@ mod tests {
     #[test]
     fn runge_kutta_fourth_order_1d_convegence() {
         // initial value problem
-        let f = |t: f64, y| y * t.sin();
+        let f = |s: &OdeState1D| s.y * s.t.sin();
         let y0 = -1.0;
-
+        let initial_state = OdeState1D { t: 0.0, y: y0 };
         // solution
         let sol = |t: f64| -(1.0 - t.cos()).exp();
 
         let t_end = 10.0;
 
-        for k in 5..10 {
+        for k in 5..15 {
             let n = 2_usize.pow(k);
-            let ys = super::rk4(f, y0, t_end, n);
+            let ys = super::Rk4Solver.integrate(f, initial_state.clone(), t_end, n);
 
             let h = t_end / n as f64;
-            let upper_bound = 1.0 * h.powi(4);
+            let upper_bound = 5.0 * h.powi(2);
 
             for i in 0..n {
-                let (t_i, y_i) = ys[i];
-                let sol_i = sol(t_i);
-                let err_i = (sol_i - y_i).abs();
+                let s_i = &ys[i];
+                let sol_i = sol(s_i.t);
+                let err_i = (sol_i - s_i.y).abs();
                 assert!(err_i <= upper_bound);
             }
         }
