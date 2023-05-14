@@ -24,11 +24,11 @@ impl Rk2Solver {
         let weighted_slope = (k1 + k2) / 2.0;
 
         // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt, that is with k1 and k2
-        let nexte_state = OdeState1D {
+        
+        OdeState1D {
             t: state.t + dt,
             y: state.y + dt * weighted_slope,
-        };
-        nexte_state
+        }
     }
 }
 
@@ -64,11 +64,11 @@ impl Rk4Solver {
         let weighted_slope = (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
 
         // "Euler step"
-        let nexte_state = OdeState1D {
+        
+        OdeState1D {
             t: state.t + dt,
             y: state.y + dt * weighted_slope,
-        };
-        nexte_state
+        }
     }
 }
 

@@ -122,19 +122,3 @@ where
 
     ys
 }
-
-#[derive(Debug)]
-pub enum OdeSolver {
-    Euler,
-    RungeKutta2,
-    RungeKutta4,
-}
-
-// impl OdeSolver {
-//     fn solver<S>(&self) -> S
-//     where
-//         S: OdeSolver1D,
-//     {
-//         todo!()
-//     }
-// }
