@@ -7,6 +7,8 @@ use crate::ode_solvers::{OdeState1D, OdeStepSolver1D};
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
+// todo: relax space to any vector space
+
 pub struct Rk2Solver;
 
 impl Rk2Solver {
@@ -24,7 +26,7 @@ impl Rk2Solver {
         let weighted_slope = (k1 + k2) / 2.0;
 
         // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt, that is with k1 and k2
-        
+
         OdeState1D {
             t: state.t + dt,
             y: state.y + dt * weighted_slope,
@@ -64,7 +66,7 @@ impl Rk4Solver {
         let weighted_slope = (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
 
         // "Euler step"
-        
+
         OdeState1D {
             t: state.t + dt,
             y: state.y + dt * weighted_slope,
