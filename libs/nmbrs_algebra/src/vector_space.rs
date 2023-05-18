@@ -40,19 +40,26 @@ impl<const D: usize> Mul<Scalar> for Vector<D> {
     fn mul(self, rhs: Scalar) -> Self::Output {
         let mut v = self.v.clone();
         for i in 0..D {
-            v[i] *= rhs * self.v[i];
+            v[i] *= rhs;
         }
         Self { v }
     }
 }
 
 /// Convenicence syntax.
+///
 /// Write `V![3; 1.1, 2.2, 3.3]` for the $3$-dimensional vector `[1.1, 2.2, 3.3]`.
 macro_rules! V {
     ( $ d : expr; $ ( $ x : expr), +  ) => {
         Vector::<$d>::new([ $ ( $ x ) , + ])
     };
 }
+
+// macro_rules! v_add {
+//     ( $ d : expr; $ ( $ x : expr), +  ) => {
+//         Vector::<$d>::new([ $ ( $ x ) , + ])
+//     };
+// }
 
 #[cfg(test)]
 mod tests {
@@ -76,5 +83,17 @@ mod tests {
         );
 
         assert_eq!(V![2; 1.0, 1.0] + V![2; 2.0, 2.0], V![2; 3.0, 3.0]);
+    }
+
+    #[test]
+    fn scalar() {
+        assert_eq!(
+            Vector::<2>::new([2.0, 3.0]) * 2.0,
+            Vector::<2>::new([4.0, 6.0])
+        );
+
+        assert_eq!(Vector::<2>::new([2.0, 3.0]) * 2.0, [4.0, 6.0].into());
+
+        assert_eq!(V![2; 2.0, 3.0] * 2.0, V![2; 4.0, 6.0]);
     }
 }
