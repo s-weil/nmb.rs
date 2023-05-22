@@ -23,8 +23,19 @@ impl NumericSemiGroup for i64 {}
 impl NumericSemiGroup for f32 {}
 impl NumericSemiGroup for f64 {}
 
+// TODO not quite correct
 pub trait Inverse: Neg<Output = Self> + Sub<Output = Self> + Sized {}
 impl<T> Inverse for T where T: Neg<Output = Self> + Sub<Output = Self> {}
+
+// impl<T> Sub for T
+// where
+//     T: Add<Output = Self> + Neg<Output = Self>,
+// {
+//     type Output = T;
+//     fn sub(self, rhs: Self) -> Self::Output {
+//         self + (-rhs)
+//     }
+// }
 
 /// Mimic features of a [(mathematical) group](https://en.wikipedia.org/wiki/Group_(mathematics)#Definition).
 ///

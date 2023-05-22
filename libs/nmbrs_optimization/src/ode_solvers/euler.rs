@@ -1,24 +1,50 @@
-use crate::ode_solvers::{OdeState1D, OdeStepSolver1D};
+use std::marker::PhantomData;
 
-pub struct EulerSolver;
+use nmbrs_algebra::VectorSpace;
 
-impl EulerSolver {
-    pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+use crate::ode_solvers::{Ode, OdeStepSolver, TimeState};
+
+pub struct EulerSolver<V>
+where
+    V: VectorSpace<f64>,
+{
+    v: PhantomData<V>,
+}
+
+// impl EulerSolver {
+//     pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+//     where
+//         F: Fn(&OdeState1D) -> f64,
+//     {
+//         OdeState1D {
+//             t: state.t + dt,
+//             y: state.y + dt * f(state),
+//         }
+//     }
+// }
+
+impl<V> EulerSolver<V>
+where
+    V: VectorSpace<f64> + Clone,
+{
+    pub fn step<F>(&self, f: F, state: &TimeState<V>, dt: f64) -> TimeState<V>
     where
-        F: Fn(&OdeState1D) -> f64,
+        F: Ode<V>,
     {
-        
-        OdeState1D {
+        TimeState {
             t: state.t + dt,
-            y: state.y + dt * f(state),
+            y: state.y.clone() + f(state) * dt,
         }
     }
 }
 
-impl OdeStepSolver1D for EulerSolver {
-    fn solve_step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+impl<V> OdeStepSolver for EulerSolver<V>
+where
+    V: VectorSpace<f64> + Clone,
+{
+    fn solve_step<F, V>(&self, f: F, state: &TimeState<V>, dt: f64) -> TimeState<V>
     where
-        F: Fn(&OdeState1D) -> f64,
+        F: Ode<V>,
     {
         self.step(f, state, dt)
     }

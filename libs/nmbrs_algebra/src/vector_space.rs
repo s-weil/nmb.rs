@@ -11,7 +11,8 @@ use std::{
 
 /// Representation of a [`Vector Space`](https://en.wikipedia.org/wiki/Vector_space).
 ///
-pub trait VectorSpace<F>: AddIdentity + Add<Output = Self> + Inverse + Mul<F> + Sized
+pub trait VectorSpace<F>:
+    AddIdentity + Add<Output = Self> + Inverse + Mul<F, Output = Self> + Sized
 where
     F: NumericField,
 {
@@ -24,6 +25,21 @@ impl<F: NumericField + Copy + MulAssign + AddAssign, const D: usize> VectorSpace
     for Vector<D, F>
 {
 }
+
+// impl VectorSpace<f64> for f64 {}
+impl<F> VectorSpace<F> for F where F: NumericField {}
+
+// impl<F, V> Mul<V> for F
+// where
+//     F: NumericField,
+//     V: VectorSpace<F>,
+// {
+//     fn mul(self, rhs: V) -> Self::Output {
+//         rhs * self
+//     }
+// }
+
+// TODO: impl for ndarray and nalgebra vectors
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Vector<const D: usize, F> {
@@ -41,6 +57,9 @@ impl<const D: usize, F> From<[F; D]> for Vector<D, F> {
         Self { v }
     }
 }
+
+impl<const D: usize, F> Copy for Vector<D, F> where F: Copy {}
+// impl<const D: usize, F> Clone for Vector<D, F> where F: Clone {}
 
 impl<const D: usize, F: NumericGroup + Copy> AddIdentity for Vector<D, F> {
     fn zero() -> Self {
@@ -104,12 +123,6 @@ macro_rules! V {
         Vector::<$d, f64>::new([ $ ( $x ) , + ])
     };
 }
-
-// macro_rules! v_add {
-//     ( $ d : expr; $ ( $ x : expr), +  ) => {
-//         Vector::<$d>::new([ $ ( $ x ) , + ])
-//     };
-// }
 
 #[cfg(test)]
 mod tests {

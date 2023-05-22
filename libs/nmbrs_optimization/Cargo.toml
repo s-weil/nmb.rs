@@ -7,6 +7,8 @@ authors = ["sweil"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+nmbrs_algebra = { path = "../nmbrs_algebra" }
 
 [dev-dependencies]
 approx = "0.5.1"
+

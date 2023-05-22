@@ -4,10 +4,7 @@ mod runge_kutta;
 pub use euler::EulerSolver;
 pub use runge_kutta::{Rk2Solver, Rk4Solver};
 
-// pub trait Ode<const D: usize> {
-//     /// The function `f` in the problem `dy/dt = f(t, y)`
-//     fn f(t: T, y: &[T; D]) -> [T; D];
-// }
+use nmbrs_algebra::VectorSpace;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OdeState1D {
@@ -102,6 +99,110 @@ pub fn integrate<S, F>(
 where
     S: OdeStepSolver1D,
     F: Fn(&OdeState1D) -> f64,
+{
+    if t_end < initial_state.t || n < 1 {
+        return Vec::with_capacity(0);
+    }
+
+    let dt = (t_end - initial_state.t) / n as f64;
+    let mut ys = Vec::with_capacity(n + 1);
+    ys.push(initial_state);
+
+    for _ in 0..n {
+        if let Some(state) = ys.last() {
+            if state.t < t_end {
+                let next_state = solver.solve_step(&f, state, dt);
+                ys.push(next_state);
+            }
+        }
+    }
+
+    ys
+}
+
+pub trait Ode<V>: Fn(&TimeState<V>) -> V
+where
+    V: VectorSpace<f64>,
+{
+}
+
+impl<F, V> Ode<V> for F
+where
+    F: Fn(&TimeState<V>) -> V,
+    V: VectorSpace<f64>,
+{
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TimeState<V>
+where
+    V: VectorSpace<f64>,
+{
+    pub t: f64,
+    pub y: V,
+}
+// TODO: add convenience methods and wrap it
+
+pub trait OdeStepSolver {
+    fn solve_step<F, V>(
+        &self,
+        // for simplicity we assume that the domain and image of f is both V
+        f: F,
+        state: &TimeState<V>,
+        dt: f64,
+    ) -> TimeState<V>
+    where
+        F: Ode<V>,
+        V: VectorSpace<f64>;
+}
+
+pub trait OdeSolver {
+    // type VectorSpace: VectorSpace<f64>;
+
+    fn integrate<F, V>(
+        &self,
+        f: F,
+        initial_state: TimeState<V>,
+        t_end: f64,
+        n: usize,
+    ) -> Vec<TimeState<V>>
+    where
+        F: Ode<V>,
+        V: VectorSpace<f64>;
+}
+
+impl<T> OdeSolver for T
+where
+    T: OdeStepSolver,
+{
+    // type VectorSpace = V;
+
+    fn integrate<F, V>(
+        &self,
+        f: F,
+        initial_state: TimeState<V>,
+        t_end: f64,
+        n: usize,
+    ) -> Vec<TimeState<V>>
+    where
+        F: Ode<V>,
+        V: VectorSpace<f64>,
+    {
+        integrate2(self, f, initial_state, t_end, n)
+    }
+}
+
+pub fn integrate2<S, F, V>(
+    solver: &S,
+    f: F,
+    initial_state: TimeState<V>,
+    t_end: f64,
+    n: usize,
+) -> Vec<TimeState<V>>
+where
+    S: OdeStepSolver,
+    F: Ode<V>,
+    V: VectorSpace<f64>,
 {
     if t_end < initial_state.t || n < 1 {
         return Vec::with_capacity(0);
