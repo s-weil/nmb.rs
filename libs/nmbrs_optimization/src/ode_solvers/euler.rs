@@ -1,58 +1,114 @@
+use crate::ode_solvers::{OdeStepSolver, OdeStepSolver3, OdeSystem, TimeState};
+use nmbrs_algebra::VectorSpace;
 use std::marker::PhantomData;
 
-use nmbrs_algebra::VectorSpace;
+// pub struct EulerSolver<S, V>
+// where
+//     S: OdeSystem<Space = V>,
+//     V: VectorSpace,
+// {
+//     v: PhantomData<V>,
+//     s: PhantomData<S>,
+// }
 
-use crate::ode_solvers::{Ode, OdeStepSolver, TimeState};
+// // impl EulerSolver {
+// //     pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+// //     where
+// //         F: Fn(&OdeState1D) -> f64,
+// //     {
+// //         OdeState1D {
+// //             t: state.t + dt,
+// //             y: state.y + dt * f(state),
+// //         }
+// //     }
+// // }
 
-pub struct EulerSolver<V>
-where
-    V: VectorSpace,
-{
-    v: PhantomData<V>,
-}
+// impl<S, V> EulerSolver<S, V>
+// where
+//     // V: VectorSpace<Field = f64> + Clone,
+//     S: OdeSystem<Space = V>,
+//     V: VectorSpace<Field = f64> + Clone,
+// {
+//     pub fn new() -> Self {
+//         Self {
+//             v: PhantomData,
+//             s: PhantomData,
+//         }
+//     }
 
-// impl EulerSolver {
-//     pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
-//     where
-//         F: Fn(&OdeState1D) -> f64,
-//     {
-//         OdeState1D {
+//     pub fn step(
+//         &self,
+//         f: S,
+//         state: &TimeState<V>,
+//         dt: f64, // <F::Space as VectorSpace>::Field,
+//     ) -> TimeState<V> {
+//         TimeState {
 //             t: state.t + dt,
-//             y: state.y + dt * f(state),
+//             y: state.y.clone() + f(state) * dt,
 //         }
 //     }
 // }
 
-impl<V> EulerSolver<V>
-where
-    V: VectorSpace + Clone,
-{
-    pub fn new() -> Self {
-        Self { v: PhantomData }
-    }
+pub struct EulerSolver;
 
-    pub fn step<F>(&self, f: F, state: &TimeState<V>, dt: f64) -> TimeState<V>
+impl EulerSolver {
+    pub fn step<S, V>(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V>
     where
-        F: Ode<Space = V>,
+        // V: VectorSpace<Field = f64> + Clone,
+        S: OdeSystem<Space = V>,
+        V: VectorSpace + Clone,
+        V::Field: Clone,
     {
         TimeState {
-            t: state.t + dt,
-            y: state.y.clone() + f(state) * dt,
+            t: state.t.clone() + dt.clone(),
+            y: state.y.clone() + f(state) * dt.clone(),
         }
     }
 }
 
-impl<V> OdeStepSolver for EulerSolver<V>
-where
-    V: VectorSpace + Clone,
-{
-    fn solve_step<F>(&self, f: F, state: &TimeState<F::Space>, dt: f64) -> TimeState<F::Space>
+impl OdeStepSolver3 for EulerSolver {
+    fn solve_step<S, V>(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V>
     where
-        F: Ode<Space = V>,
+        S: OdeSystem<Space = V>,
+        V: VectorSpace + Clone,
+        V::Field: Clone,
     {
         self.step(f, state, dt)
     }
 }
+
+impl OdeStepSolver for EulerSolver {
+    fn solve_step<S>(
+        &self,
+        f: &S,
+        state: &TimeState<S::Space>,
+        dt: <S::Space as VectorSpace>::Field,
+    ) -> TimeState<S::Space>
+    where
+        S: OdeSystem,
+        S::Space: Clone,
+        <S::Space as VectorSpace>::Field: Clone,
+    {
+        self.step(f, state, dt)
+    }
+}
+
+// impl<V> OdeStepSolver for EulerSolver<V>
+// where
+//     V: VectorSpace<Field = f64> + Clone,
+// {
+//     fn solve_step<F>(
+//         &self,
+//         f: F,
+//         state: &TimeState<F::Space>,
+//         dt: <F::Space as VectorSpace>::Field,
+//     ) -> TimeState<F::Space>
+//     where
+//         F: OdeSystem<Space = V>,
+//     {
+//         self.step(f, state, dt)
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

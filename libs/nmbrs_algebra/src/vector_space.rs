@@ -25,13 +25,15 @@ impl<F: NumericField + Copy + MulAssign + AddAssign, const D: usize> VectorSpace
     type Field = F;
 }
 
-// impl VectorSpace<f64> for f64 {}
 impl<F> VectorSpace for F
 where
     F: NumericField,
 {
     type Field = F;
 }
+
+pub trait VectorSpaceF32: VectorSpace<Field = f32> {}
+pub trait VectorSpaceF64: VectorSpace<Field = f64> {}
 
 // impl<F, V> Mul<V> for F
 // where
