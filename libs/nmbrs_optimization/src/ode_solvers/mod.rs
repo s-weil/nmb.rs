@@ -124,12 +124,12 @@ pub trait Ode: Fn(&TimeState<Self::Space>) -> Self::Space {
     type Space: VectorSpace;
 }
 
-impl<F, V> Ode for F
-where
-    F: Fn(&TimeState<V>) -> V,
-{
-    type Space = V;
-}
+// impl<F, V: VectorSpace> Ode for F
+// where
+//     F: Fn(&TimeState<V>) -> V,
+// {
+//     type Space = V;
+// }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TimeState<V>
