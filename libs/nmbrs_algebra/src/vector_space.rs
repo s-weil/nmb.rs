@@ -11,23 +11,27 @@ use std::{
 
 /// Representation of a [`Vector Space`](https://en.wikipedia.org/wiki/Vector_space).
 ///
-pub trait VectorSpace<F>:
-    AddIdentity + Add<Output = Self> + Inverse + Mul<F, Output = Self> + Sized
-where
-    F: NumericField,
+pub trait VectorSpace:
+    AddIdentity + Add<Output = Self> + Inverse + Mul<Self::Field, Output = Self> + Sized
 {
+    type Field: NumericField;
+
     // 0 for add, 1 for mul
     // associativity
     // distributivity for add and mul
 }
 
-impl<F: NumericField + Copy + MulAssign + AddAssign, const D: usize> VectorSpace<F>
-    for Vector<D, F>
-{
+impl<F: NumericField + Copy + MulAssign + AddAssign, const D: usize> VectorSpace for Vector<D, F> {
+    type Field = F;
 }
 
 // impl VectorSpace<f64> for f64 {}
-impl<F> VectorSpace<F> for F where F: NumericField {}
+impl<F> VectorSpace for F
+where
+    F: NumericField,
+{
+    type Field = F;
+}
 
 // impl<F, V> Mul<V> for F
 // where

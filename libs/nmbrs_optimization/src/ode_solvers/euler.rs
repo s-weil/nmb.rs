@@ -6,7 +6,7 @@ use crate::ode_solvers::{Ode, OdeStepSolver, TimeState};
 
 pub struct EulerSolver<V>
 where
-    V: VectorSpace<f64>,
+    V: VectorSpace,
 {
     v: PhantomData<V>,
 }
@@ -25,11 +25,11 @@ where
 
 impl<V> EulerSolver<V>
 where
-    V: VectorSpace<f64> + Clone,
+    V: VectorSpace + Clone,
 {
     pub fn step<F>(&self, f: F, state: &TimeState<V>, dt: f64) -> TimeState<V>
     where
-        F: Ode<V>,
+        F: Ode<Space = V>,
     {
         TimeState {
             t: state.t + dt,
@@ -40,11 +40,11 @@ where
 
 impl<V> OdeStepSolver for EulerSolver<V>
 where
-    V: VectorSpace<f64> + Clone,
+    V: VectorSpace + Clone,
 {
-    fn solve_step<F, V>(&self, f: F, state: &TimeState<V>, dt: f64) -> TimeState<V>
+    fn solve_step<F>(&self, f: F, state: &TimeState<V>, dt: f64) -> TimeState<V>
     where
-        F: Ode<V>,
+        F: Ode<Space = V>,
     {
         self.step(f, state, dt)
     }
@@ -68,7 +68,7 @@ mod tests {
 
         for k in 5..15 {
             let n = 2_usize.pow(k);
-            let ys = super::EulerSolver.integrate(f, initial_state.clone(), t_end, n);
+            let ys = super::EulerSolver::<f64>.integrate(f, initial_state.clone(), t_end, n);
 
             let h = t_end / n as f64;
             let upper_bound = 20.0 * h;

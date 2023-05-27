@@ -120,55 +120,56 @@ where
     ys
 }
 
-pub trait Ode<V>: Fn(&TimeState<V>) -> V
-where
-    V: VectorSpace<f64>,
-{
+pub trait Ode: Fn(&TimeState<Self::Space>) -> Self::Space {
+    type Space: VectorSpace;
 }
 
-impl<F, V> Ode<V> for F
+impl<F, V> Ode for F
 where
     F: Fn(&TimeState<V>) -> V,
-    V: VectorSpace<f64>,
 {
+    type Space = V;
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TimeState<V>
 where
-    V: VectorSpace<f64>,
+    V: VectorSpace,
 {
     pub t: f64,
     pub y: V,
 }
 // TODO: add convenience methods and wrap it
 
+// pub trait OdeSystem {
+//     type Space: VectorSpace;
+
+// }
+
 pub trait OdeStepSolver {
-    fn solve_step<F, V>(
+    fn solve_step<F>(
         &self,
         // for simplicity we assume that the domain and image of f is both V
         f: F,
-        state: &TimeState<V>,
+        state: &TimeState<F::Space>,
         dt: f64,
-    ) -> TimeState<V>
+    ) -> TimeState<F::Space>
     where
-        F: Ode<V>,
-        V: VectorSpace<f64>;
+        F: Ode;
 }
 
 pub trait OdeSolver {
     // type VectorSpace: VectorSpace<f64>;
 
-    fn integrate<F, V>(
+    fn integrate<F>(
         &self,
         f: F,
-        initial_state: TimeState<V>,
+        initial_state: TimeState<F::Space>,
         t_end: f64,
         n: usize,
-    ) -> Vec<TimeState<V>>
+    ) -> Vec<TimeState<F::Space>>
     where
-        F: Ode<V>,
-        V: VectorSpace<f64>;
+        F: Ode;
 }
 
 impl<T> OdeSolver for T
@@ -177,32 +178,30 @@ where
 {
     // type VectorSpace = V;
 
-    fn integrate<F, V>(
+    fn integrate<F>(
         &self,
         f: F,
-        initial_state: TimeState<V>,
+        initial_state: TimeState<F::Space>,
         t_end: f64,
         n: usize,
-    ) -> Vec<TimeState<V>>
+    ) -> Vec<TimeState<F::Space>>
     where
-        F: Ode<V>,
-        V: VectorSpace<f64>,
+        F: Ode,
     {
         integrate2(self, f, initial_state, t_end, n)
     }
 }
 
-pub fn integrate2<S, F, V>(
+pub fn integrate2<S, F>(
     solver: &S,
     f: F,
-    initial_state: TimeState<V>,
+    initial_state: TimeState<F::Space>,
     t_end: f64,
     n: usize,
-) -> Vec<TimeState<V>>
+) -> Vec<TimeState<F::Space>>
 where
     S: OdeStepSolver,
-    F: Ode<V>,
-    V: VectorSpace<f64>,
+    F: Ode,
 {
     if t_end < initial_state.t || n < 1 {
         return Vec::with_capacity(0);
