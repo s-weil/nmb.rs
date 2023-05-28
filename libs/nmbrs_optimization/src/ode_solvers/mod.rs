@@ -1,11 +1,9 @@
 mod euler;
 mod runge_kutta;
-
-use std::fmt::Display;
-
 pub use euler::EulerSolver;
 use nmbrs_algebra::VectorSpace;
 pub use runge_kutta::{Rk2Solver, Rk4Solver};
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OdeState1D {
@@ -121,42 +119,6 @@ where
     ys
 }
 
-// pub trait OdeSystem {
-//     type Space: VectorSpace;
-
-//     fn ode(time_state: &TimeState<Self::Space>) -> Self::Space;
-// }
-
-// impl<F, V: VectorSpace> OdeSystem for F
-// where
-//     F: Fn(&TimeState<V>) -> V,
-// {
-//     type Space = V;
-//     fn ode(time_state: &TimeState<Self::Space>) -> Self::Space {
-//         Self(time_state)
-//     }
-// }
-
-// impl<F, V: VectorSpace> Ode for F
-// where
-//     F: Fn(&TimeState<V>) -> V,
-// {
-//     type Space = V;
-// }
-
-// for simplicity we assume that the domain and image of f is both V
-// pub trait OdeSystem: Fn(&TimeState<Self::Space>) -> Self::Space {
-//     type Space: VectorSpace;
-// }
-
-// impl<F, V> OdeSystem for F
-// where
-//     F: Fn(&TimeState<V>) -> V,
-//     V: VectorSpace,
-// {
-//     type Space = V;
-// }
-
 // for simplicity we assume that the domain and image of f is both V
 pub trait OdeSystem2<V>: Fn(&TimeState<V>) -> V
 where
@@ -170,8 +132,6 @@ where
     V: VectorSpace,
 {
 }
-
-// TODO: which version is nicer/more convenient?
 
 // #[derive(Debug, Clone, PartialEq)]
 pub struct TimeState<V>
@@ -213,24 +173,7 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{:?}: {:?}]", self.t, self.y)
     }
-    // fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    //     write!(f, "({}: {})", self.t, self.y)
-    // }
 }
-
-// pub trait OdeStepSolver {
-//     fn solve_step<S>(
-//         &self,
-//         // for simplicity we assume that the domain and image of f is both V
-//         f: &S,
-//         state: &TimeState<S::Space>,
-//         dt: <S::Space as VectorSpace>::Field,
-//     ) -> TimeState<S::Space>
-//     where
-//         S: OdeSystem,
-//         S::Space: Clone,
-//         <S::Space as VectorSpace>::Field: Clone;
-// }
 
 pub trait OdeStepSolver2<S, V>
 where
@@ -240,22 +183,6 @@ where
 {
     fn solve_step(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V>;
 }
-
-// pub trait OdeSolver {
-//     // type VectorSpace: VectorSpace<f64>;
-
-//     fn integrate<S>(
-//         &self,
-//         f: &S,
-//         initial_state: TimeState<S::Space>,
-//         t_end: <S::Space as VectorSpace>::Field,
-//         n: usize,
-//     ) -> Vec<TimeState<S::Space>>
-//     where
-//         S: OdeSystem,
-//         S::Space: Clone,
-//         <S::Space as VectorSpace>::Field: Clone + From<i8> + PartialOrd;
-// }
 
 pub trait OdeSolver2<S, V>
 where
@@ -272,34 +199,12 @@ where
     ) -> Vec<TimeState<V>>;
 }
 
-// impl<T> OdeSolver for T
-// where
-//     T: OdeStepSolver,
-// {
-//     // type VectorSpace = V;
-
-//     fn integrate<S>(
-//         &self,
-//         f: &S,
-//         initial_state: TimeState<S::Space>,
-//         t_end: <S::Space as VectorSpace>::Field,
-//         n: usize,
-//     ) -> Vec<TimeState<S::Space>>
-//     where
-//         S: OdeSystem,
-//         S::Space: Clone,
-//         <S::Space as VectorSpace>::Field: Clone + From<i8> + PartialOrd,
-//     {
-//         integrate2(self, f, initial_state, t_end, n)
-//     }
-// }
-
 impl<T, S, V> OdeSolver2<S, V> for T
 where
     T: OdeStepSolver2<S, V>,
     S: OdeSystem2<V>,
     V: VectorSpace + Clone,
-    V::Field: Clone + From<i8> + PartialOrd,
+    V::Field: Clone + PartialOrd + From<i32>,
 {
     fn integrate(
         &self,
@@ -312,39 +217,6 @@ where
     }
 }
 
-// pub fn integrate2<X, S>(
-//     solver: &X,
-//     f: &S,
-//     initial_state: TimeState<S::Space>,
-//     t_end: <S::Space as VectorSpace>::Field,
-//     n: usize,
-// ) -> Vec<TimeState<S::Space>>
-// where
-//     X: OdeStepSolver,
-//     S: OdeSystem,
-//     S::Space: Clone,
-//     <S::Space as VectorSpace>::Field: Clone + From<i8> + PartialOrd,
-// {
-//     if t_end < initial_state.t || n < 1 {
-//         return Vec::with_capacity(0);
-//     }
-
-//     let dt = (t_end.clone() - initial_state.t.clone()) / (n as i8).into();
-//     let mut ys = Vec::with_capacity(n + 1);
-//     ys.push(initial_state);
-
-//     for _ in 0..n {
-//         if let Some(state) = ys.last() {
-//             if state.t < t_end {
-//                 let next_state = solver.solve_step(f, state, dt.clone());
-//                 ys.push(next_state);
-//             }
-//         }
-//     }
-
-//     ys
-// }
-
 pub fn integrate3<X, S, V>(
     solver: &X,
     f: &S,
@@ -356,13 +228,13 @@ where
     X: OdeStepSolver2<S, V>,
     S: OdeSystem2<V>,
     V: VectorSpace + Clone,
-    V::Field: Clone + From<i8> + PartialOrd,
+    V::Field: Clone + PartialOrd + From<i32>,
 {
     if t_end < initial_state.t || n < 1 {
         return Vec::with_capacity(0);
     }
 
-    let dt = (t_end.clone() - initial_state.t.clone()) / (n as i8).into();
+    let dt = (t_end.clone() - initial_state.t.clone()) / (n as i32).into();
     let mut ys = Vec::with_capacity(n + 1);
     ys.push(initial_state);
 
