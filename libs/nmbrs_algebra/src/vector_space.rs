@@ -3,6 +3,7 @@ use crate::{
     NumericGroup, NumericRing,
 };
 use std::{
+    fmt::Display,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub},
     usize,
 };
@@ -50,6 +51,15 @@ pub trait VectorSpaceF64: VectorSpace<Field = f64> {}
 #[derive(Debug, Clone, PartialEq)]
 pub struct Vector<const D: usize, F> {
     v: [F; D],
+}
+
+impl<const D: usize, F> Display for Vector<D, F>
+where
+    F: Display + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:?}]", self.v)
+    }
 }
 
 impl<const D: usize, F> Vector<D, F> {
