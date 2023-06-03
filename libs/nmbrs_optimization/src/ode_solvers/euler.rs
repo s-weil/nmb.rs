@@ -1,4 +1,4 @@
-use crate::ode_solvers::{OdeStepSolver2, OdeSystem2, TimeState};
+use crate::ode_solvers::{OdeStepSolver, OdeSystem, TimeState};
 use nmbrs_algebra::VectorSpace;
 
 pub struct EulerSolver;
@@ -6,22 +6,22 @@ pub struct EulerSolver;
 impl EulerSolver {
     pub fn step<S, V>(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V>
     where
-        S: OdeSystem2<V>,
+        S: OdeSystem<V>,
         V: VectorSpace + Clone,
         V::Field: Clone,
     {
         TimeState {
             t: state.t.clone() + dt.clone(),
-            y: state.y.clone() + f(state) * dt.clone(),
+            y: state.y.clone() + f(state) * dt,
         }
     }
 }
 
-impl<S, V> OdeStepSolver2<S, V> for EulerSolver
+impl<S, V> OdeStepSolver<S, V> for EulerSolver
 where
-    S: OdeSystem2<V>,
-    V: VectorSpace + Clone + std::fmt::Debug,
-    V::Field: Clone + std::fmt::Debug,
+    S: OdeSystem<V>,
+    V: VectorSpace + Clone,
+    V::Field: Clone,
 {
     fn solve_step(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V> {
         self.step(f, state, dt)
@@ -30,7 +30,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ode_solvers::{OdeSolver2, TimeState};
+    use crate::ode_solvers::{OdeSolver, TimeState};
 
     #[test]
     fn euler_1d_convegence() {

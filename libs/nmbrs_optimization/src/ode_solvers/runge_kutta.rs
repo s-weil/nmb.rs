@@ -1,5 +1,5 @@
-use crate::ode_solvers::{OdeState1D, OdeStepSolver1D};
-
+use super::{OdeStepSolver, OdeSystem, TimeState};
+use nmbrs_algebra::{NumericField, VectorSpace};
 // TODO: add D=1 case for scalar like odes;
 // split in steps, maybe even have a trait for just solving one step
 
@@ -7,38 +7,58 @@ use crate::ode_solvers::{OdeState1D, OdeStepSolver1D};
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
-// todo: relax space to any vector space
+fn weight<F>(denominator: usize) -> F
+where
+    F: NumericField + From<i32>,
+{
+    F::one() / F::from(denominator as i32)
+}
 
 pub struct Rk2Solver;
 
 impl Rk2Solver {
-    pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+    pub fn step<S, V>(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V>
     where
-        F: Fn(&OdeState1D) -> f64,
+        S: OdeSystem<V>,
+        V: VectorSpace + Clone,
+        V::Field: Clone + From<i32>,
     {
-        // evaluate f at t, y_t
+        // in short:
+        // let k1 = f(state);
+        // let k2 = f(&OdeState1D {
+        //     t: state.t + dt,
+        //     y: state.y + dt * k1,
+        // });
+        // let weighted_slope = (k1 + k2) / 2.0;
+
+        // k1: evaluate f at t, y_t
         let k1 = f(state);
-        // approximate f(t + dt, y1) via Euler f(t + dt, y + dt * f(t , y))
-        let k2 = f(&OdeState1D {
-            t: state.t + dt,
-            y: state.y + dt * k1,
+
+        // k2: approximate f(t + dt, y1) via Euler f(t + dt, y + dt * f(t , y))
+        let t_step = state.t.clone() + dt.clone();
+        let k2 = f(&TimeState {
+            t: t_step.clone(),
+            y: state.y.clone() + f(state) * dt.clone(),
         });
-        let weighted_slope = (k1 + k2) / 2.0;
 
-        // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt, that is with k1 and k2
+        // approximate y1 via Euler but the slope at t replaced by the mean of the slopes at t and t+dt,
+        // that is with the average of k1 and k2
+        let weighted_slope = (k1 + k2) * weight(2);
 
-        OdeState1D {
-            t: state.t + dt,
-            y: state.y + dt * weighted_slope,
+        TimeState {
+            t: t_step,
+            y: state.y.clone() + weighted_slope * dt,
         }
     }
 }
 
-impl OdeStepSolver1D for Rk2Solver {
-    fn solve_step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
-    where
-        F: Fn(&OdeState1D) -> f64,
-    {
+impl<S, V> OdeStepSolver<S, V> for Rk2Solver
+where
+    S: OdeSystem<V>,
+    V: VectorSpace + Clone,
+    V::Field: Clone + From<i32>,
+{
+    fn solve_step(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V> {
         self.step(f, state, dt)
     }
 }
@@ -46,87 +66,69 @@ impl OdeStepSolver1D for Rk2Solver {
 pub struct Rk4Solver;
 
 impl Rk4Solver {
-    pub fn step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
+    pub fn step<S, V>(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V>
     where
-        F: Fn(&OdeState1D) -> f64,
+        S: OdeSystem<V>,
+        V: VectorSpace + Clone,
+        V::Field: Clone + From<i32>,
     {
+        // in short:
+        // let k1 = f(state);
+        // let k2 = f(&TimeState {
+        //     t: state.t + dt / 2.0,
+        //     y: state.y + dt / 2.0 * k1,
+        // });
+        // let k3 = f(&TimeState {
+        //     t: state.t + dt / 2.0,
+        //     y: state.y + dt / 2.0 * k2,
+        // });
+        // let k4 = f(&TimeState {
+        //     t: state.t + dt,
+        //     y: state.y + dt * k3,
+        // });
+        // let weighted_slope = (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
+
         let k1 = f(state);
-        let k2 = f(&OdeState1D {
-            t: state.t + dt / 2.0,
-            y: state.y + dt / 2.0 * k1,
+
+        // k2 & k3: take approximate derivatives at t + dt/2
+        let dt_mid = dt.clone() * weight(2);
+        let t_mid = state.t.clone() + dt_mid.clone();
+        let k2: V = f(&TimeState {
+            t: t_mid.clone(),
+            y: state.y.clone() + k1.clone() * dt_mid.clone(),
         });
-        let k3 = f(&OdeState1D {
-            t: state.t + dt / 2.0,
-            y: state.y + dt / 2.0 * k2,
+        let k3 = f(&TimeState {
+            t: t_mid,
+            y: state.y.clone() + k2.clone() * dt_mid,
         });
-        let k4 = f(&OdeState1D {
-            t: state.t + dt,
-            y: state.y + dt * k3,
+        let k_mid = (k2 + k3.clone()) * V::Field::from(2);
+
+        let t_step = state.t.clone() + dt.clone();
+        let k4 = f(&TimeState {
+            t: t_step.clone(),
+            y: state.y.clone() + k3 * dt.clone(),
         });
-        let weighted_slope = (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
+
+        let weighted_slope = (k1 + k_mid + k4) * weight(6);
 
         // "Euler step"
-
-        OdeState1D {
-            t: state.t + dt,
-            y: state.y + dt * weighted_slope,
+        TimeState {
+            t: t_step,
+            y: state.y.clone() + weighted_slope * dt,
         }
     }
 }
 
-impl OdeStepSolver1D for Rk4Solver {
-    fn solve_step<F>(&self, f: F, state: &OdeState1D, dt: f64) -> OdeState1D
-    where
-        F: Fn(&OdeState1D) -> f64,
-    {
+impl<S, V> OdeStepSolver<S, V> for Rk4Solver
+where
+    S: OdeSystem<V>,
+    V: VectorSpace + Clone,
+    V::Field: Clone + From<i32>,
+{
+    fn solve_step(&self, f: &S, state: &TimeState<V>, dt: V::Field) -> TimeState<V> {
         self.step(f, state, dt)
     }
 }
-
-// fn scalar<const D: usize>(scalar: f64, vec: &[f64; D]) -> [f64; D] {
-//     let mut v = *vec;
-//     for i in 0..D {
-//         v[i] *= scalar;
-//     }
-//     v
-// }
-
-// fn add<const D: usize>(vec1: &[f64; D], vec2: &[f64; D]) -> [f64; D] {
-//     let mut v = *vec1;
-//     for i in 0..D {
-//         v[i] += vec2[i];
-//     }
-//     v
-// }
-
-// pub fn runge_kutta_second_order<const D: usize, F>(
-//     f: F,
-//     y0: [f64; D],
-//     t_end: f64,
-//     n: usize,
-// ) -> Vec<[f64; D]>
-// where
-//     F: Fn(T, &[T; D]) -> [T; D],
-// {
-//     let dt = t_end / n as f64;
-//     let mut t = 0.0;
-
-//     let mut ys = Vec::with_capacity(n + 1);
-
-//     let mut y0 = y0;
-
-//     while t < t_end {
-//         let k1 = f(t, &y0);
-//         let k2 = f(t + dt, &add(&y0, &scalar(dt, &k1)));
-//         let y = add(&y0, &scalar(dt * 0.5, &(add(&k1, &k2))));
-//         y0 = y;
-//         t += dt;
-//         ys.push(y);
-//     }
-
-//     assert_eq!(ys.len(), n);
-//     ys
-// }
 
 #[cfg(test)]
 mod tests {
@@ -162,15 +164,14 @@ mod tests {
     //     }
     // }
 
-    use crate::ode_solvers::OdeSolver1D;
-    use crate::ode_solvers::OdeState1D;
+    use crate::ode_solvers::{OdeSolver, TimeState};
 
     #[test]
     fn runge_kutta_second_order_1d_convegence() {
         // initial value problem
-        let f = |s: &OdeState1D| s.y * s.t.sin();
+        let f = |s: &TimeState<f64>| s.y * s.t.sin();
         let y0 = -1.0;
-        let initial_state = OdeState1D { t: 0.0, y: y0 };
+        let initial_state: TimeState<f64> = TimeState { t: 0.0, y: y0 };
 
         // solution
         let sol = |t: f64| -(1.0 - t.cos()).exp();
@@ -179,7 +180,7 @@ mod tests {
 
         for k in 5..15 {
             let n = 2_usize.pow(k);
-            let ys = super::Rk2Solver.integrate(f, initial_state.clone(), t_end, n);
+            let ys = super::Rk2Solver.integrate(&f, initial_state.clone(), t_end, n);
 
             let h = t_end / n as f64;
             let upper_bound = 5.0 * h.powi(2);
@@ -188,7 +189,12 @@ mod tests {
                 let s_i = &ys[i];
                 let sol_i = sol(s_i.t);
                 let err_i = (sol_i - s_i.y).abs();
-                assert!(err_i <= upper_bound);
+                assert!(
+                    err_i <= upper_bound,
+                    "error {} exceeded threshold {}",
+                    err_i,
+                    upper_bound
+                );
             }
         }
     }
@@ -196,9 +202,10 @@ mod tests {
     #[test]
     fn runge_kutta_fourth_order_1d_convegence() {
         // initial value problem
-        let f = |s: &OdeState1D| s.y * s.t.sin();
+        let f = |s: &TimeState<f64>| s.y * s.t.sin();
         let y0 = -1.0;
-        let initial_state = OdeState1D { t: 0.0, y: y0 };
+        let initial_state = TimeState { t: 0.0, y: y0 };
+
         // solution
         let sol = |t: f64| -(1.0 - t.cos()).exp();
 
@@ -206,16 +213,22 @@ mod tests {
 
         for k in 5..15 {
             let n = 2_usize.pow(k);
-            let ys = super::Rk4Solver.integrate(f, initial_state.clone(), t_end, n);
+            let ys = super::Rk4Solver.integrate(&f, initial_state.clone(), t_end, n);
 
-            let h = t_end / n as f64;
-            let upper_bound = 5.0 * h.powi(4);
+            let dt: f64 = t_end / n as f64;
+            let upper_bound = 5.0 * dt.powi(4);
 
             for i in 0..n {
                 let s_i = &ys[i];
                 let sol_i = sol(s_i.t);
                 let err_i = (sol_i - s_i.y).abs();
-                assert!(err_i <= upper_bound);
+                assert!(
+                    err_i <= upper_bound,
+                    "error {} exceeded threshold {} ({})",
+                    err_i,
+                    upper_bound,
+                    n
+                );
             }
         }
     }

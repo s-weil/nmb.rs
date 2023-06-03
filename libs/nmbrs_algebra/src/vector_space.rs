@@ -87,7 +87,7 @@ impl<const D: usize, F: NumericGroup + AddAssign + Copy> Add for Vector<D, F> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let mut v = rhs.v.clone();
+        let mut v = rhs.v;
         for i in 0..D {
             v[i] += self.v[i];
         }
@@ -99,9 +99,9 @@ impl<const D: usize, F: NumericGroup + Copy> Neg for Vector<D, F> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        let mut v = self.v.clone();
-        for i in 0..D {
-            v[i] = -self.v[i];
+        let mut v = self.v;
+        for x in v.iter_mut().take(D) {
+            *x = -*x;
         }
         Self { v }
     }
@@ -111,7 +111,7 @@ impl<const D: usize, F: NumericGroup + Copy> Sub for Vector<D, F> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
-        let mut v = rhs.v.clone();
+        let mut v = rhs.v;
         for i in 0..D {
             v[i] = self.v[i] - rhs.v[i];
         }
@@ -123,9 +123,9 @@ impl<const D: usize, F: NumericRing + MulAssign + Copy> Mul<F> for Vector<D, F> 
     type Output = Self;
 
     fn mul(self, rhs: F) -> Self::Output {
-        let mut v = self.v.clone();
-        for i in 0..D {
-            v[i] *= rhs;
+        let mut v: [F; D] = self.v;
+        for x in v.iter_mut().take(D) {
+            *x *= rhs;
         }
         Self { v }
     }
@@ -162,6 +162,31 @@ mod tests {
         );
 
         assert_eq!(V![2; 1.0, 1.0] + V![2; 2.0, 2.0], V![2; 3.0, 3.0]);
+    }
+
+    #[test]
+    fn neg() {
+        assert_eq!(-V![2; 1.0, 1.0], V![2; -1.0, -1.0]);
+    }
+
+    #[test]
+    fn subtract() {
+        assert_eq!(
+            Vector::<2, f64>::new([1.0, 1.0]) - Vector::<2, f64>::new([2.0, 2.0]),
+            Vector::<2, f64>::new([-1.0, -1.0])
+        );
+
+        assert_eq!(
+            Vector::<2, f64>::new([2.0, 2.0]) - [1.0, 1.0].into(),
+            [1.0, 1.0].into()
+        );
+
+        assert_eq!(
+            V![2; 1.0, 1.0] - V![2; 2.0, 2.0],
+            Vector::<2, f64>::new([-1.0, -1.0])
+        );
+
+        assert_eq!(V![2; 1.0, 1.0] - V![2; 2.0, 2.0], V![2; -1.0, -1.0]);
     }
 
     #[test]
