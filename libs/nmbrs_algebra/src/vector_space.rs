@@ -11,7 +11,6 @@ use std::{
 // TODO: improve on trait bounds below
 
 /// Representation of a [`Vector Space`](https://en.wikipedia.org/wiki/Vector_space).
-///
 pub trait VectorSpace:
     AddIdentity + Add<Output = Self> + Inverse + Mul<Self::Field, Output = Self> + Sized
 {
@@ -75,7 +74,6 @@ impl<const D: usize, F> From<[F; D]> for Vector<D, F> {
 }
 
 impl<const D: usize, F> Copy for Vector<D, F> where F: Copy {}
-// impl<const D: usize, F> Clone for Vector<D, F> where F: Clone {}
 
 impl<const D: usize, F: NumericGroup + Copy> AddIdentity for Vector<D, F> {
     fn zero() -> Self {
@@ -88,8 +86,8 @@ impl<const D: usize, F: NumericGroup + AddAssign + Copy> Add for Vector<D, F> {
 
     fn add(self, rhs: Self) -> Self {
         let mut v = rhs.v;
-        for i in 0..D {
-            v[i] += self.v[i];
+        for (idx, x) in v.iter_mut().enumerate().take(D) {
+            *x += self.v[idx];
         }
         Self { v }
     }
@@ -111,9 +109,9 @@ impl<const D: usize, F: NumericGroup + Copy> Sub for Vector<D, F> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
-        let mut v = rhs.v;
-        for i in 0..D {
-            v[i] = self.v[i] - rhs.v[i];
+        let mut v = self.v;
+        for (idx, x) in v.iter_mut().enumerate().take(D) {
+            *x = *x - rhs.v[idx];
         }
         Self { v }
     }

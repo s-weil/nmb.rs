@@ -1,9 +1,5 @@
 use super::{OdeStepSolver, OdeSystem, TimeState};
 use nmbrs_algebra::{NumericField, VectorSpace};
-// TODO: add D=1 case for scalar like odes;
-// split in steps, maybe even have a trait for just solving one step
-
-// see https://people.math.ethz.ch/~hiptmair/tmp/NUMODE11.pdf
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
 
@@ -14,6 +10,8 @@ where
     F::one() / F::from(denominator as i32)
 }
 
+/// The [Runge Kutta Method](https://en.wikipedia.org/wiki/Runge-Kutta_methods)
+/// of order 2.
 pub struct Rk2Solver;
 
 impl Rk2Solver {
@@ -63,6 +61,8 @@ where
     }
 }
 
+/// The [Runge Kutta Method](https://en.wikipedia.org/wiki/Runge-Kutta_methods)
+/// of order 4.
 pub struct Rk4Solver;
 
 impl Rk4Solver {
@@ -182,8 +182,8 @@ mod tests {
             let n = 2_usize.pow(k);
             let ys = super::Rk2Solver.integrate(&f, initial_state.clone(), t_end, n);
 
-            let h = t_end / n as f64;
-            let upper_bound = 5.0 * h.powi(2);
+            let dt: f64 = t_end / n as f64;
+            let upper_bound = 5.0 * dt.powi(2);
 
             for i in 0..n {
                 let s_i = &ys[i];

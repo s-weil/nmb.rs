@@ -1,6 +1,8 @@
 use crate::ode_solvers::{OdeStepSolver, OdeSystem, TimeState};
 use nmbrs_algebra::VectorSpace;
 
+/// The [Euler Method](https://en.wikipedia.org/wiki/Euler_method)
+/// is a first-order numerical procedure for solving ordinary differential equations with a given initial value.
 pub struct EulerSolver;
 
 impl EulerSolver {
