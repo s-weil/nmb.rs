@@ -1,7 +1,7 @@
 use super::{OdeStepSolver, OdeSystem, TimeState};
 use nmbrs_algebra::{NumericField, VectorSpace};
 
-// https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
+// todo: lorenz attractor
 
 fn weight<F>(denominator: usize) -> F
 where
